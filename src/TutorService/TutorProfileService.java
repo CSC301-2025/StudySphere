@@ -1,5 +1,6 @@
 package TutorService;
 
+import java.io.*;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
@@ -12,8 +13,15 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import TutorService.Tutor;
+import TutorService.SendRequests;
+
 
 class TutorProfileService {
+    private static final int DatabaseServicePort = 8080;
+    private static final String DatabaseServiceIP = "http://127.0.0.1";
+    private static final String DatabaseServiceURL = DatabaseServiceIP + ":" + DatabaseServicePort;
+
     public static void main(String[] args) throws IOException {
         
         // Read the config file
@@ -58,7 +66,6 @@ class TutorProfileService {
          */
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            
             if ("POST".equals(exchange.getRequestMethod())) {
                 handlePost(exchange);
 
@@ -81,7 +88,7 @@ class TutorProfileService {
             // TODO: creation of a tutor
 
             /** needs to have some or all of the following:
-             *      - user_id
+             *      - tutorID
              *      - name
              *      - email
              *      - hashed_password
@@ -90,14 +97,31 @@ class TutorProfileService {
              *      - profile_description
              *      - reviewsIdList - not going to be sent here since new tutor has no reviews
              *      
-             */  
-            
+             */
+            String requestBody = getRequestBody(exchange);
+            JSONObject json = new JSONObject(requestBody);
+
+            // check that all the required fields are present
+            if (!json.has("tutorID")
+                    || !json.has("name")
+                    || !json.has("email")
+                    || !json.has("hashed_password")
+                    || !json.has("University")
+                    || !json.has("courses")
+                    || !json.has("profile_description")) {
+                sendJsonResponse(exchange, new JSONObject(), 404);
+                return;
+            }
+
+            // Get the request body
+            // TODO: finish this one
+
             sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
         }
 
         public void handleGet(HttpExchange exchange) throws IOException {
             /** needs to send back all of the following:
-             *      - user_id
+             *      - tutorID
              *      - username
              *      - name
              *      - email
@@ -138,22 +162,52 @@ class TutorProfileService {
         }
 
         public void handleDelete(HttpExchange exchange) throws IOException {
-            // Deletes a user
-
-            /**
+            /*
              * Needs to have the following:
-             *      - user_id
-             *      - email
+             *      - tutorID
              *      - password
-             * 
+             *
              */
-            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
+            String requestBody = getRequestBody(exchange);
+            JSONObject json = new JSONObject(requestBody);
+            // check that the necessary fields are present
+            if (!json.has("tutorID")
+                    || !json.has("password")) {
+                sendJsonResponse(exchange, new JSONObject(), 404);
+                return;
+            }
+
+            System.out.println("Deleting tutor with id: " + json.getInt("tutorID"));
+            // Send a post request to the Database to create a new tutor
+            String deletion_response = SendRequests.sendPostRequest(
+                    DatabaseServiceURL + "/tutor/remove", json.toString());
+
+            System.out.println("Response: " + deletion_response);
+
+            // TODO: currently returns null when the deleted user doesnt exist
+            //  but should be response with error message and status code
+            // check if the response is null
+            if (deletion_response != null) {
+                // Send the response back to the client
+                JSONObject json_deletion_response = new JSONObject(deletion_response);
+                if (json_deletion_response.has("message")) {
+                    // successful delete
+                    sendJsonResponse(exchange, new JSONObject(), 200);
+                    return;
+                }
+                // internal error with post requestwq
+
+                sendJsonResponse(exchange, new JSONObject(), 500);
+            }
+            // failed delete
+            sendJsonResponse(exchange, new JSONObject(), 404);
+
         }
 
         public void handlePatch(HttpExchange exchange) throws IOException {
             /**
              * Needs to have the following:
-             *      - userId
+             *      - tutorID
              * 
              * Could have the following:
              *      - name
@@ -169,6 +223,21 @@ class TutorProfileService {
         }
 
     }
+
+
+    private static String getRequestBody(HttpExchange exchange) throws
+            IOException {
+        try (BufferedReader br = new BufferedReader(new
+                InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+            StringBuilder requestBody = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                requestBody.append(line);
+            }
+            return requestBody.toString();
+        }
+    }
+
 
     /**
      * Method to read json files
