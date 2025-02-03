@@ -89,7 +89,8 @@ class TutorProfileService {
 
             /** needs to have some or all of the following:
              *      - tutorID
-             *      - name
+             *      - first_name
+             *      - last_name
              *      - email
              *      - hashed_password
              *      - University
@@ -103,27 +104,39 @@ class TutorProfileService {
 
             // check that all the required fields are present
             if (!json.has("tutorID")
-                    || !json.has("name")
+                    || !json.has("first_name")
+                    || !json.has("last_name")
                     || !json.has("email")
-                    || !json.has("hashed_password")
-                    || !json.has("University")
-                    || !json.has("courses")
-                    || !json.has("profile_description")) {
-                sendJsonResponse(exchange, new JSONObject(), 404);
+                    || !json.has("password")
+                    || !json.has("universityID")
+                    || !json.has("coursesIDs")
+                    || !json.has("description")
+                    || !json.has("reviewsIDs")
+            ) {
+                sendJsonResponse(exchange, new JSONObject(), 400);
                 return;
             }
 
-            // Get the request body
-            // TODO: finish this one
+            // Send a post request to the Database to create a new tutor
+            String post_response = SendRequests.sendPostRequest(
+                    DatabaseServiceURL + "/tutor/add", json.toString());
 
-            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
+            // check if the response is null
+            if (post_response != null) {
+                // Send the response back to the client
+                // TODO: need to be able to differentiate between an internal error
+                //  and a tutor already existing
+                sendJsonResponse(exchange, new JSONObject(), 200);
+            } else {
+                sendJsonResponse(exchange, new JSONObject(), 500);
+            }
         }
 
         public void handleGet(HttpExchange exchange) throws IOException {
             /** needs to send back all of the following:
              *      - tutorID
              *      - username
-             *      - name
+             *      - first_name
              *      - email
              *      - hashed_password
              *      - UniversityId
@@ -156,9 +169,23 @@ class TutorProfileService {
                 sendJsonResponse(exchange, new JSONObject(), 400);
                 return;
             }
+
+            System.out.println("ID: " + id);
+
+            // Send a post request to the Database to create a new tutor
+            String get_response = SendRequests.sendGetRequest(
+                    DatabaseServiceURL + "/tutor/" + id);
+
+            // check if the response is null
+            if (get_response != null) {
+                // we got a response now need to check if the response is a tutor or a database error
+                // TODO: need to be able to differentiate between an internal error and a tutor not found
+                sendJsonResponse(exchange, new JSONObject(get_response), 200);
+            } else {
+                // internal error with post request
+                sendJsonResponse(exchange, new JSONObject(), 500);
+            }
             
-            
-            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
         }
 
         public void handleDelete(HttpExchange exchange) throws IOException {
@@ -173,16 +200,13 @@ class TutorProfileService {
             // check that the necessary fields are present
             if (!json.has("tutorID")
                     || !json.has("password")) {
-                sendJsonResponse(exchange, new JSONObject(), 404);
+                sendJsonResponse(exchange, new JSONObject(), 400);
                 return;
             }
 
-            System.out.println("Deleting tutor with id: " + json.getInt("tutorID"));
             // Send a post request to the Database to create a new tutor
             String deletion_response = SendRequests.sendPostRequest(
                     DatabaseServiceURL + "/tutor/remove", json.toString());
-
-            System.out.println("Response: " + deletion_response);
 
             // TODO: currently returns null when the deleted user doesnt exist
             //  but should be response with error message and status code
@@ -210,7 +234,7 @@ class TutorProfileService {
              *      - tutorID
              * 
              * Could have the following:
-             *      - name
+             *      - first_name
              *      - email
              *      - hashed_password
              *      - UniversityId
