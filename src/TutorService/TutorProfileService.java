@@ -60,7 +60,7 @@ class TutorProfileService {
         public void handle(HttpExchange exchange) throws IOException {
             
             if ("POST".equals(exchange.getRequestMethod())) {
-                System.out.println("POST request received");
+                handlePost(exchange);
 
             } else if ("PATCH".equals(exchange.getRequestMethod())) {
                 System.out.println("PATCH request received");
@@ -76,6 +76,25 @@ class TutorProfileService {
                 sendJsonResponse(exchange, new JSONObject(), 405);
             }
         }
+
+        public void handlePost(HttpExchange exchange) throws IOException {
+            // TODO: creation of a tutor
+
+            /** needs to have some or all of the following:
+             *      - user_id
+             *      - name
+             *      - email
+             *      - hashed_password
+             *      - University
+             *      - courses
+             *      - profile_description
+             *      - reviewsIdList - not going to be sent here since new tutor has no reviews
+             *      
+             */  
+            
+            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
+        }
+
     }
 
     /**
