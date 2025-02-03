@@ -66,7 +66,7 @@ class TutorProfileService {
                 System.out.println("PATCH request received");
 
             } else if ("GET".equals(exchange.getRequestMethod())) {
-                System.out.println("GET request received");
+                handleGet(exchange);
         
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 System.out.println("DELETE request received");
@@ -91,6 +91,48 @@ class TutorProfileService {
              *      - reviewsIdList - not going to be sent here since new tutor has no reviews
              *      
              */  
+            
+            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
+        }
+
+        public void handleGet(HttpExchange exchange) throws IOException {
+            /** needs to send back all of the following:
+             *      - user_id
+             *      - username
+             *      - name
+             *      - email
+             *      - hashed_password
+             *      - UniversityId
+             *      - coursesIdList
+             *      - profile_description
+             *      - reviewsIdList - not going to be sent here since new tutor has no reviews
+             *      
+             */ 
+
+            // Get the request URI
+            String requestURI = exchange.getRequestURI().toString();
+
+            // Get the id from the URI
+            String[] uriParts = requestURI.split("/");
+
+            // Error Response
+            if (uriParts.length < 3) {
+                sendJsonResponse(exchange, new JSONObject(), 400);
+                return;
+                
+            }
+
+             // Get the id
+            int id;
+            try {
+                id = Integer.parseInt(uriParts[2]);
+            } catch (NumberFormatException e) {
+
+                // Incorrect field type, reponse
+                sendJsonResponse(exchange, new JSONObject(), 400);
+                return;
+            }
+            
             
             sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
         }
