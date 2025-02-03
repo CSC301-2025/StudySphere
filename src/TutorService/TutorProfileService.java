@@ -63,13 +63,13 @@ class TutorProfileService {
                 handlePost(exchange);
 
             } else if ("PATCH".equals(exchange.getRequestMethod())) {
-                System.out.println("PATCH request received");
+                handlePatch(exchange);
 
             } else if ("GET".equals(exchange.getRequestMethod())) {
                 handleGet(exchange);
         
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
-                System.out.println("DELETE request received");
+                handleDelete(exchange);
 
             } else {
                 // Invalid request method
@@ -134,6 +134,37 @@ class TutorProfileService {
             }
             
             
+            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
+        }
+
+        public void handleDelete(HttpExchange exchange) throws IOException {
+            // Deletes a user
+
+            /**
+             * Needs to have the following:
+             *      - user_id
+             *      - email
+             *      - password
+             * 
+             */
+            sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
+        }
+
+        public void handlePatch(HttpExchange exchange) throws IOException {
+            /**
+             * Needs to have the following:
+             *      - userId
+             * 
+             * Could have the following:
+             *      - name
+             *      - email
+             *      - hashed_password
+             *      - UniversityId
+             *      - coursesIdList
+             *      - profile_description
+             *      - reviewsIdList - not going to be sent here since new tutor has no reviews
+             */
+
             sendJsonResponse(exchange, new JSONObject().put("message", "NOT IMPLEMENTED"), 200);
         }
 
