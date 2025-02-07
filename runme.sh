@@ -10,6 +10,17 @@ case $1 in
         mkdir -p compiled/TutorService
         javac -cp "libs/*" -d compiled/TutorService src/TutorService/*.java
 
+        echo "Compiling UserServiceMain.."
+        mkdir -p compiled/UserService
+        javac -cp "libs/*" -d compiled/UserService src/UserService/*.java
+
+        echo "Compiling StudentService.."
+        mkdir -p compiled/StudentService
+        javac -cp "libs/*" -d compiled/StudentService src/StudentService/*.java
+
+        echo "Compiling ISCS.."
+        mkdir -p compiled/ISCS
+        javac -cp "libs/*" -d compiled/ISCS src/ISCS/*.java
 
         echo "Successfully Compiled Everything!"
         ;;
@@ -38,6 +49,36 @@ case $1 in
             java -cp "compiled/TutorService;libs/*" TutorService.TutorProfileService
         else
             java -cp "compiled/TutorService:libs/*" TutorService.TutorProfileService
+        fi
+        ;;
+
+    # Start user profile service
+    -up)
+        echo "Starting User Profile Service.."
+        if [[ "$OSTYPE" == "msys" ]]; then
+            java -cp "compiled/UserService;libs/*" UserService.UserServiceMain
+        else
+            java -cp "compiled/UserService:libs/*" UserService.UserServiceMain
+        fi
+        ;;
+
+    # Start Student profile service
+    -sp)
+        echo "Starting Student Profile Service.."
+        if [[ "$OSTYPE" == "msys" ]]; then
+            java -cp "compiled/StudentService;libs/*" StudentService.StudentServiceMain
+        else
+            java -cp "compiled/StudentService:libs/*" StudentService.StudentServiceMain
+        fi
+        ;;
+
+    # Start ISCS service
+    -ip)
+        echo "Starting ISCS Service.."
+        if [[ "$OSTYPE" == "msys" ]]; then
+            java -cp "compiled/ISCS;libs/*" ISCS.ISCS
+        else
+            java -cp "compiled/ISCS:libs/*" ISCS.ISCS
         fi
         ;;
 
