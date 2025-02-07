@@ -1,0 +1,13 @@
+# Activate virtual environment (for python):
+# Windows (git bash):
+source venv/Scripts/activate
+# Mac:
+source venv/bin/activate
+
+
+# Deactivate virtual environment (for python):
+deactivate
+
+
+# Run service:
+python database_api.py or python3 database_api.py
