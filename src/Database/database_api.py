@@ -125,9 +125,6 @@ def add_tutor():
     
     if 'universityID' not in data:
         return {"error": "Missing universityID"}
-    
-    if 'listingsIDs' not in data:
-        return {'error': 'Missing listingsIDs'}
 
     tutorID = data['tutorID']
     first_name = data['first_name']
