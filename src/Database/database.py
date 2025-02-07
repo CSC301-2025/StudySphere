@@ -100,7 +100,7 @@ def get_user_db(userID: int):
     return result
 
 
-def add_tutor_db(tutorID: int, first_name : str, last_name : str, email: str, password: str, coursesIDs: list[int], description: str, reviewsIDs: list[int], universityID: int, listingsIDs: list[int]) -> bool:
+def add_tutor_db(tutorID: int, first_name : str, last_name : str, email: str, password: str, coursesIDs: list[int], description: str, reviewsIDs: list[int], universityID: int, listingsIDs: list[int] = []) -> bool:
     result = tutors.insert_one({"tutorID": tutorID, "first_name" : first_name, "last_name" : last_name, "email": email, "password": password, "coursesIDs": coursesIDs, "description": description, "reviewsIDs": reviewsIDs, "universityID": universityID, "listingsIDs": listingsIDs})
     return result
 

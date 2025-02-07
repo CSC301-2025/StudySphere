@@ -139,7 +139,7 @@ def add_tutor():
     reviewsIDs = data['reviewsIDs']
     universityID = data['universityID']
 
-    add_tutor_db(tutorID, first_name, last_name, email, password, coursesIDs, description, reviewsIDs, universityID, listingsIDs)
+    add_tutor_db(tutorID, first_name, last_name, email, password, coursesIDs, description, reviewsIDs, universityID)
     return {"message": "Successfully added tutor"}
 
 
