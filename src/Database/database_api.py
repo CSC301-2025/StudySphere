@@ -92,7 +92,10 @@ def update_user():
 
 @app.route('/user/<int:userID>', methods=['GET'])
 def get_user(userID):
-    return get_user_db(userID)
+    result = get_user_db(userID)
+    if result == None:
+        return {"error": f"User with ID: {userID} couldn't be found."}
+    return result
 
 
 @app.route('/tutor/add', methods=['POST'])
@@ -177,7 +180,10 @@ def update_tutor():
 
 @app.route('/tutor/<int:tutorID>', methods=['GET'])
 def get_tutor(tutorID):
-    return get_tutor_db(tutorID)
+    result = get_tutor_db(tutorID)
+    if result == None:
+        return {"error": f"Tutor with ID: {tutorID} couldn't be found."}
+    return result
 
 
 @app.route('/university/add', methods=['POST'])
@@ -217,7 +223,10 @@ def update_university():
 
 @app.route('/university/<int:universityID>', methods=['GET'])
 def get_university(universityID):
-    return get_university_db(universityID)
+    result = get_university_db(universityID)
+    if result == None:
+        return {"error": f"University with ID: {universityID} couldn't be found."}
+    return result
 
 
 @app.route('/course/add', methods=['POST'])
@@ -263,7 +272,10 @@ def update_course():
 
 @app.route('/course/<int:courseID>', methods=['GET'])
 def get_course(courseID):
-    return get_course_db(courseID)
+    result = get_course_db(courseID)
+    if result == None:
+        return {"error": f"Course with ID: {courseID} couldn't be found."}
+    return result
 
 
 if __name__ == '__main__':
