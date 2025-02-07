@@ -97,6 +97,7 @@ def update_user_db(userID: int, first_name : str = None, last_name : str = None,
 
 def get_user_db(userID: int):
     result = users.find_one({"userID": userID})
+    result.pop('_id', None)
     return result
 
 
@@ -151,6 +152,7 @@ def update_tutor_db(tutorID: int, first_name : str = None, last_name : str = Non
 
 def get_tutor_db(tutorID: int):
     result = tutors.find_one({"tutorID": tutorID})
+    result.pop('_id', None)
     return result
 
 
@@ -200,6 +202,7 @@ def update_review_db(reviewID: int, userID: int, tutorID: int, rating: float, de
 
 def get_review_db(reviewID: int):
     result = reviews.find_one({"reviewID": reviewID})
+    result.pop('_id', None)
     return result
 
 
@@ -240,6 +243,7 @@ def update_listing_db(listingID: int, tutorID: int = None, description: str = No
 
 def get_listing_db(listingID: int):
     result = listings.find_one({"listingID": listingID})
+    result.pop('_id', None)
     return result
 
 
@@ -271,6 +275,7 @@ def update_university_db(universityID: int, coursesIDs: list[int] = None) -> boo
 
 def get_university_db(universityID: int):
     result = universities.find_one({"universityID": universityID})
+    result.pop('_id', None)
     return result
 
 
@@ -317,6 +322,7 @@ def update_course_db(courseID: int, universityID: int = None, title: str = None,
 
 def get_course_db(courseID: int):
     result = courses.find_one({"courseID": courseID})
+    result.pop('_id', None)
     return result
 
 
