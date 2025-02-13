@@ -1,20 +1,30 @@
 package com.app.User;
 
 import com.app.Dto.*;
+import com.app.Role.Role;
+import com.app.Role.RoleRepository;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, AuthenticationManager authenticationManager, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.authenticationManager = authenticationManager;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -36,6 +46,7 @@ public class UserService {
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toList())); // Convert Role to Strings
         return dto;
     }
 
@@ -58,6 +69,9 @@ public class UserService {
             passwordEncoder.encode(registerDto.getPassword()),
             registerDto.getRecoveryEmail()
     );
+
+        Role roles = roleRepository.findByName("USER").get();
+        user.setRoles(Collections.singletonList(roles));
 
         return userRepository.save(user);
     }
