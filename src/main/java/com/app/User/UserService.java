@@ -2,6 +2,8 @@ package com.app.User;
 
 import com.app.Dto.*;
 import com.app.security.JWTGenerator;
+import com.app.Role.Role;
+import com.app.Role.RoleRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -17,13 +19,14 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-
     private final JWTGenerator jwtGenerator;
 
-    public UserService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JWTGenerator jwtGenerator) {
+    public UserService(UserRepository userRepository, AuthenticationManager authenticationManager, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JWTGenerator jwtGenerator) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtGenerator = jwtGenerator;
     }
@@ -46,6 +49,7 @@ public class UserService {
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toList())); // Convert Role to Strings
         return dto;
     }
 
@@ -67,7 +71,10 @@ public class UserService {
             registerDto.getPhoneNumber(),
             passwordEncoder.encode(registerDto.getPassword()),
             registerDto.getRecoveryEmail()
-    );
+        );
+
+        Role roles = roleRepository.findByName("USER").get();
+        user.setRoles(Collections.singletonList(roles));
 
         return userRepository.save(user);
     }
@@ -89,17 +96,16 @@ public class UserService {
 
     public AuthResponseDto validateTokens(String accessToken, String refreshToken) {
 
-            // Validate refresh Token, throws error if token not valid
-            jwtGenerator.validateToken(refreshToken);
-            Optional<UserEntity> user = userRepository.findByUsername(jwtGenerator.getUsernameFromJWT(accessToken));
-            UserDto userDto = convertToDto(user.get());
+        // Validate refresh Token, throws error if token not valid
+        jwtGenerator.validateToken(refreshToken);
+        Optional<UserEntity> user = userRepository.findByUsername(jwtGenerator.getUsernameFromJWT(accessToken));
+        UserDto userDto = convertToDto(user.get());
 
         try { // Validate Access Token
             jwtGenerator.validateToken(accessToken);
             // Both Tokens valid, user is authenticated
             return new AuthResponseDto(accessToken, refreshToken, userDto);
-        }
-        catch(Exception e) { // Access token invalid, create new one using refresh token
+        } catch (Exception e) { // Access token invalid, create new one using refresh token
             String newToken = jwtGenerator.generateAccessToken(refreshToken,
                     jwtGenerator.getUsernameFromJWT(refreshToken));
 
