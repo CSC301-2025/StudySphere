@@ -1,18 +1,22 @@
-package com.todoservice;
+package com.app.todoservice;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Document
-public class Task {
+@Data
+@NoArgsConstructor
+public class TodoEntity {
     @Id
-    private String id;
+    private Long id;
     private String description;
     private String sectionID;
-    private boolean completed;
+    private boolean completed = false;
 
     // Constructor
-    public Task(String description, String sectionID) {
+    public TodoEntity(String description, String sectionID) {
         this.description = description;
         this.sectionID = sectionID;
     }
