@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
+import VisualCalendar from '../components/VisualCalendar.tsx';
 
 interface Event {
   id: number;
@@ -16,6 +17,7 @@ const CalendarPage: React.FC = () => {
     eventDate: ''
   });
 
+  // Fetch events from the backend database when the component mounts.
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -29,6 +31,7 @@ const CalendarPage: React.FC = () => {
     }
   };
 
+  // Handle changes in the input fields.
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewEvent({ ...newEvent, [name]: value });
@@ -76,8 +79,13 @@ const CalendarPage: React.FC = () => {
           Add Event
         </button>
       </section>
+      
+      
       <section>
         <h2>Events</h2>
+        {events.length === 0 ? (
+          <p>No events found.</p>
+        ) : (
         <ul>
           {events.map((event) => (
             <li key={event.id}>
@@ -87,7 +95,10 @@ const CalendarPage: React.FC = () => {
             </li>
           ))}
         </ul>
+        )}
       </section>
+
+      <VisualCalendar events={events} />
     </div>
   );
 };
