@@ -1,6 +1,5 @@
 package com.app.User;
 
-import com.app.Role.Role;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,31 +35,12 @@ public class UserEntity implements UserDetails {
 
     private String recoveryEmail;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinTable(
-        name = "user_roles", 
-        joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
-    )
-    private List<Role> roles = new ArrayList<>();
-
         // Relationships
         // @OneToMany(mappedBy = "user")
         // private List<Section> sections = new ArrayList<>();
     
         // @OneToMany(mappedBy = "user")
         // private List<Review> reviews = new ArrayList<>();
-
-    // Constructor with roles
-    public UserEntity(String firstName, String lastName, String email, String phoneNumber, String password, List<Role> roles, List<String> universities, String recoveryEmail) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.password = password;
-        this.roles = roles;
-        this.recoveryEmail = recoveryEmail;
-    }
 
     // Constructor without explicit roles
     public UserEntity(String firstName, String lastName, String email, String phoneNumber, String password, String recoveryEmail) {
@@ -73,9 +53,7 @@ public class UserEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
-            .map(role -> new SimpleGrantedAuthority(role.getName()))
-            .collect(Collectors.toList());
+        return null;
     }
 
     @Override
