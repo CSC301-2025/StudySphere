@@ -5,6 +5,7 @@ import Calendar from './pages/Calendar.tsx';
 import Activities from './pages/Activities.tsx';
 import Todo from './pages/Todo.tsx';
 import CoursePage from './pages/CoursePage';
+import Sections from './pages/Sections'; // <-- import the new page
 
 const App: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const App: React.FC = () => {
         <Route path="/activities" element={<Activities />} />
         <Route path="/todo" element={<Todo />} />
         <Route path="/courses" element={<CoursePage />} />
+        <Route path="/sections" element={<Sections />} />
       </Routes>
     </Router>
   );
