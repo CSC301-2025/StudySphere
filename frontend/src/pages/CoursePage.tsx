@@ -23,26 +23,17 @@ const CoursePage: React.FC = () => {
 
   return (
     <div className="course-page">
-        <header className="course-header">
-    <h1>📖 Course Dashboard</h1>
-    <nav>
-      {/* Home link stays the same */}
-      <Link to="/" className="nav-link">
-        🏠 Home
-      </Link>s
-
-      {/* To-Do link with icon and text on separate lines */}
-      <Link to="/todo" className="nav-link nav-icon-below">
-        <span>📝</span>
-        <span>To-Do List</span>
-      </Link>
-
-      {/* Calendar link stays the same */}
-      <Link to="/calendar" className="nav-link">
-        📅 Calendar
-      </Link>
-    </nav>
-  </header>
+      <header className="course-header">
+        <h1>📖 Course Dashboard</h1>
+        <nav>
+          {/* Existing Home link */}
+          <Link to="/" className="back-home">🏠 Home</Link>
+          {/* New To-Do link */}
+          <Link to="/todo" className="back-home">📝 To-Do List</Link>
+          {/* New Calendar link */}
+          <Link to="/calendar" className="back-home">📅 Calendar</Link>
+        </nav>
+      </header>
       
 
       <div className="course-banner">
