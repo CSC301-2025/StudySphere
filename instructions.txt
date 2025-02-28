@@ -8,6 +8,9 @@ Frontend:
     Setup:
         cd frontend
         npm install
+        npm install axios 
+        npm npm install @types/react @types/react-dom
+
 
     Run:
         npm run dev
