@@ -19,7 +19,7 @@ public class TodoService {
     }
 
     // Get todo by id
-    public TodoEntity getTodoById(Long id) {
+    public TodoEntity getTodoById(String id) {
         return todoRepository.findById(id).orElse(null);
     }
 
@@ -29,7 +29,7 @@ public class TodoService {
     }
 
     // Get todos by section id
-    public List<TodoEntity> getTodosBySectionID(Long id) {
+    public List<TodoEntity> getTodosBySectionID(String id) {
         return todoRepository.getTodosBySectionID(id).orElse(null);
     }
 
@@ -59,7 +59,7 @@ public class TodoService {
     }
 
     // Delete a todo from the database
-    public void deletetodo(Long id) {
+    public void deletetodo(String id) {
         todoRepository.deleteById(id);
     }
 

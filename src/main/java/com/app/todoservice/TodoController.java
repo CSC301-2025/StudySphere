@@ -30,13 +30,13 @@ public class TodoController {
 
     // Get todo by id
     @GetMapping("/{id}")
-    public TodoEntity getTodo(@PathVariable Long id) {
+    public TodoEntity getTodo(@PathVariable String id) {
         return todoService.getTodoById(id);
     }
 
     // Get all todos by section id
     @GetMapping("/section/{id}")
-    public List<TodoEntity> getTodosBySection(@PathVariable Long id) {
+    public List<TodoEntity> getTodosBySection(@PathVariable String id) {
         return todoService.getTodosBySectionID(id);
     }
 
@@ -57,8 +57,8 @@ public class TodoController {
     }
 
     // Delete a task (if it exists)
-    @PutMapping("/{id}")
-    public void deleteTodo(@PathVariable Long id) {
+    @DeleteMapping("/{id}")
+    public void deleteTodo(@PathVariable String id) {
         todoService.deletetodo(id);
     }
 

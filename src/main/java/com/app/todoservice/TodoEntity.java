@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TodoEntity {
     @Id
-    private Long id;
+    private String id;
     private String description;
     private String sectionID;
     private boolean completed = false;
