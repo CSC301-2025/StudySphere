@@ -1,0 +1,124 @@
+/* src/pages/CoursePage.css */
+
+/* 
+   Force horizontal centering with position + transform,
+   so we don't depend on the parent's layout or margin auto. 
+*/
+.course-page {
+  width: 90%;
+  max-width: 900px;
+
+  /* Force horizontal center on the page */
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+
+  /* Add vertical spacing if desired */
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+
+  padding: 1.5rem;
+  background: #1a1a1a;
+  border-radius: 10px;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  color: #ffffff;  /* Ensures text is visible on the dark background */
+}
+
+/* Header */
+.course-header {
+  /* Keep your existing flex layout for the header */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  /* gap: 1rem; <-- This gap only affects the space between h1 and nav */
+}
+
+/* ADD THIS to space out the links within the nav */
+.course-header nav {
+  display: flex;      /* Make the nav itself a flex container */
+  gap: 1.5rem;        /* Adjust as needed: 1.5rem, 2rem, etc. */
+  align-items: center;
+}
+
+
+.course-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+.back-home {
+  text-decoration: none;
+  font-size: 1rem;
+  color: #646cff;
+  font-weight: bold;
+  transition: color 0.3s ease-in-out;
+}
+.back-home:hover {
+  color: #535bf2;
+}
+
+/* Banner */
+.course-banner {
+  background: linear-gradient(135deg, #646cff, #8a5cf6);
+  color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+.course-banner h2 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+.course-banner p {
+  font-size: 1.1rem;
+  font-weight: 300;
+}
+
+/* Tabs */
+.course-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.course-tabs button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 25px;
+  background: #eee;  /* Light grey for contrast */
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  font-weight: 500;
+  color: #333;        /* Visible on #eee */
+}
+.course-tabs button:hover {
+  background: #646cff;
+  color: #ffffff;
+}
+.course-tabs .active {
+  background: #535bf2;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* Content Box */
+.course-content {
+  background: #2a2a2a; /* Slightly lighter for contrast */
+  padding: 1.5rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  color: #ffffff;    /* Text is visible on dark grey */
+}
+
+/* Inner text in the content area */
+.tab-content {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #ffffff;
+}
+

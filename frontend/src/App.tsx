@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard.tsx';
 import Calendar from './pages/Calendar.tsx';
 import Activities from './pages/Activities.tsx';
 import Todo from './pages/Todo.tsx';
+import CoursePage from './pages/CoursePage';
 
 const App: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const App: React.FC = () => {
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/activities" element={<Activities />} />
         <Route path="/todo" element={<Todo />} />
+        <Route path="/courses" element={<CoursePage />} />
       </Routes>
     </Router>
   );
