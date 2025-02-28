@@ -1,18 +1,24 @@
 package com.app.Section;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Document
+@Data
+@NoArgsConstructor
 public class SectionEntity {
-    private Long section_id;
+    @Id
+    private String section_id;
     private String section_name;
     private String section_colour;
 
-    public SectionEntity() {
-    }
-
-    public Long getSection_id() {
+    public String getSection_id() {
         return section_id;
     }
 
-    public void setSection_id(Long section_id) {
+    public void setSection_id(String section_id) {
         this.section_id = section_id;
     }
 
@@ -33,7 +39,7 @@ public class SectionEntity {
     }
 
     // constructor
-    public SectionEntity(Long section_id, String section_name, String section_colour) {
+    public SectionEntity(String section_id, String section_name, String section_colour) {
         this.section_id = section_id;
         this.section_name = section_name;
         this.section_colour = section_colour;

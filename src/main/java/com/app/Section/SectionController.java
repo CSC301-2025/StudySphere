@@ -26,7 +26,7 @@ public class SectionController {
 
     // get request to get a section by id
     @GetMapping("/{id}")
-    public SectionEntity getSectionById(@PathVariable Long id) {
+    public SectionEntity getSectionById(@PathVariable String id) {
         return sectionService.getSectionById(id);
     }
 
@@ -44,7 +44,7 @@ public class SectionController {
 
     // delete request to delete a section
     @DeleteMapping("/{id}")
-    public void deleteSection(@PathVariable Long id) {
+    public void deleteSection(@PathVariable String id) {
         sectionService.deleteSection(id);
     }
 

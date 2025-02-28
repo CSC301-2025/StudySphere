@@ -18,7 +18,7 @@ public class SectionService {
         return sectionRepository.findAll();
     }
 
-    public SectionEntity getSectionById(Long id) {
+    public SectionEntity getSectionById(String id) {
         return sectionRepository.findById(id).orElse(null);
     }
 
@@ -31,13 +31,17 @@ public class SectionService {
         Optional<SectionEntity> optional_Entity = sectionRepository.findById(sectionDto.getSection_id());
 
         if (optional_Entity.isPresent()) {
+            // SectionEntity sectionEntity = (SectionEntity) optional_Entity;
+            // if (!sectionDto.getSection_name().isEmpty()) {
+            //     optional_Entity.setSection_name(sectionDto.getSection_name());
+            // }
             return sectionRepository.save(toEntity(sectionDto));
         } else {
             return new SectionEntity();
         }
     }
 
-    public void deleteSection(Long id) {
+    public void deleteSection(String id) {
         sectionRepository.deleteById(id);
     }
 
