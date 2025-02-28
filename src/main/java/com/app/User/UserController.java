@@ -26,7 +26,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public UserEntity getUser(@PathVariable Long id) { // @PathVariable extracts id from the url
+    public UserEntity getUser(@PathVariable String id) { // @PathVariable extracts id from the url
         return userService.getUserById(id);
     }
 
@@ -80,7 +80,7 @@ public class UserController {
 
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
+    public void deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
     }
 }

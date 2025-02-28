@@ -32,24 +32,33 @@ public class SecurityConfig {
         this.jwtGenerator = jwtGenerator;
     }
 
+    // @Bean
+    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+    //         http
+    //             .csrf(AbstractHttpConfigurer::disable)
+    //             .exceptionHandling(exceptionHandling ->
+    //                     exceptionHandling.authenticationEntryPoint(authEntryPoint))
+    //             .sessionManagement(sessionManagement ->
+    //                     sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    //             .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
+    //                     .requestMatchers("/admin/**").hasRole("ADMIN")
+    //                     .requestMatchers("/user/**").hasRole("USER")
+    //                     .anyRequest().authenticated())
+    //             .httpBasic(withDefaults());
+
+    //         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+    //         return http.build();
+    // }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-            http
-                .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exceptionHandling ->
-                        exceptionHandling.authenticationEntryPoint(authEntryPoint))
-                .sessionManagement(sessionManagement ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers("api/auth/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasRole("USER")
-                        .anyRequest().authenticated())
-                .httpBasic(withDefaults());
-
-            http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-            return http.build();
-    }
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll()
+            );
+    return http.build();
+}
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)

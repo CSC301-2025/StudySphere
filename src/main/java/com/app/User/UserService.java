@@ -36,7 +36,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public UserEntity getUserById(Long id) {
+    public UserEntity getUserById(String id) {
         return userRepository.findById(id).orElse(null);
     }
 
@@ -60,7 +60,7 @@ public class UserService {
     public UserEntity saveUser(RegisterDto registerDto) {
 
         // User already exists
-        if (userRepository.existsByUsername(registerDto.getEmail())) {
+        if (userRepository.existsByEmail(registerDto.getEmail())) {
             return null;
         }
 
@@ -115,7 +115,7 @@ public class UserService {
         }
     }
 
-    public void deleteUser(Long id) {
+    public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
 
