@@ -1,10 +1,7 @@
 package com.app.Section;
 
-import com.app.Section.SectionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.Dto.*;
@@ -23,42 +20,32 @@ public class SectionController {
 
     // get request to get all sections
     @GetMapping
-    public List<SectionDto> getAllSections() {
-        // pass
-        // return sectionService.getAllSections();
-        return null; // TODO: not done yet
+    public List<SectionEntity> getAllSections() {
+        return sectionService.getAllSections();
     }
 
     // get request to get a section by id
     @GetMapping("/{id}")
-    public SectionDto getSectionById(@PathVariable Long id) {
-        // pass
-        // return sectionService.getSectionById(id);
-        return null; // TODO: not done yet
+    public SectionEntity getSectionById(@PathVariable Long id) {
+        return sectionService.getSectionById(id);
     }
 
     // post request to add a section
     @PostMapping
-    public ResponseEntity<SectionDto> addSection(@RequestBody SectionDto sectionDto) {
-        // pass
-        // return new ResponseEntity<>(sectionService.addSection(sectionDto), HttpStatus.CREATED);
-        return null; // TODO: not done yet
+    public ResponseEntity<SectionEntity> addSection(@RequestBody SectionDto sectionDto) {
+        return new ResponseEntity<>(sectionService.addSection(sectionDto), HttpStatus.CREATED);
     }
 
     // put request to update a section
     @PutMapping
-    public ResponseEntity<SectionDto> updateSection(@RequestBody SectionDto sectionDto) {
-        // pass
-        // return new ResponseEntity<>(sectionService.updateSection(sectionDto), HttpStatus.OK);
-        return null; // TODO: not done yet
+    public ResponseEntity<SectionEntity> updateSection(@RequestBody SectionDto sectionDto) {
+        return new ResponseEntity<>(sectionService.updateSection(sectionDto), HttpStatus.OK);
     }
 
     // delete request to delete a section
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteSection(@PathVariable Long id) {
-        // pass
-        // sectionService.deleteSection(id);
-        return null; // TODO: not done yet
+    public void deleteSection(@PathVariable Long id) {
+        sectionService.deleteSection(id);
     }
 
 }
