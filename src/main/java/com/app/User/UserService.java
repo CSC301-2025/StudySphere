@@ -114,6 +114,26 @@ public class UserService {
         }
     }
 
+    public AuthResponseDto refreshAccessToken(String refreshToken) {
+        // Validate the refresh token
+        jwtGenerator.validateToken(refreshToken);
+    
+        String username = jwtGenerator.getUsernameFromJWT(refreshToken);
+    
+        // Retrieve the user
+        Optional<UserEntity> userOpt = userRepository.findByEmail(username);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("User not found");
+        }
+        UserDto userDto = convertToDto(userOpt.get());
+    
+        // Generate a new access token
+        String newAccessToken = jwtGenerator.generateAccessToken(refreshToken, username);
+    
+        return new AuthResponseDto(newAccessToken, refreshToken, userDto);
+    }
+    
+
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }

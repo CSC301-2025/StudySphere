@@ -34,6 +34,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDto>> getUser(@PathVariable String id) {
+        System.out.println(3452);
         UserEntity user = userService.getUserById(id);
         if (user != null) {
             return ResponseEntity.ok(new ApiResponse<>(true, "User found", userService.convertToDto(user)));
@@ -78,12 +79,25 @@ public class UserController {
 
     @PostMapping("/validateTokens")
     public ResponseEntity<ApiResponse<AuthResponseDto>> validateTokens(@RequestBody TokenDto dto) {
+        System.out.println(12345);
         try {
             AuthResponseDto tokens = userService.validateTokens(dto.getAccessToken(), dto.getRefreshToken());
             return ResponseEntity.ok(new ApiResponse<>(true, "Tokens valid", tokens));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiResponse<>(false, "Could not authorize, please sign in.", null));
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthResponseDto>> refreshAccessToken(@RequestBody TokenDto tokenDto) {
+        try {
+            // Use only the refresh token from the DTO to generate a new access token.
+            AuthResponseDto authResponse = userService.refreshAccessToken(tokenDto.getRefreshToken());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Token refreshed", authResponse));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(false, "Invalid refresh token", null));
         }
     }
 
