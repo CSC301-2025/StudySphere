@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import com.app.Dto.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("api/auth")
@@ -21,57 +24,69 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserEntity> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<ApiResponse<List<UserDto>>> getAllUsers() {
+        List<UserDto> dtos = userService.getAllUsers().stream()
+            .map(userService::convertToDto)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Users retrieved", dtos));
     }
+
 
     @GetMapping("/{id}")
-    public UserEntity getUser(@PathVariable Long id) { // @PathVariable extracts id from the url
-        return userService.getUserById(id);
+    public ResponseEntity<ApiResponse<UserDto>> getUser(@PathVariable String id) {
+        UserEntity user = userService.getUserById(id);
+        if (user != null) {
+            return ResponseEntity.ok(new ApiResponse<>(true, "User found", userService.convertToDto(user)));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse<>(false, "User not found", null));
     }
+
+
 
     @PostMapping("/register")
-    public ResponseEntity<String> createUser(@RequestBody RegisterDto registerDto) {
-
-        UserEntity user = userService.saveUser(registerDto);
-
-        // User Created
-        if (user != null) {
-            return new ResponseEntity<>("User Created", HttpStatus.OK);
+    public ResponseEntity<ApiResponse<String>> createUser(@Valid @RequestBody RegisterDto registerDto) {
+        try {
+            userService.saveUser(registerDto);
+            return ResponseEntity.ok(new ApiResponse<>(true, "User Created", null));
+        } catch (IllegalArgumentException ex) { // User already exists
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(false, ex.getMessage(), null));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "An error occurred during registration.", null));
         }
-        // User already Exists
-        return new ResponseEntity<>("User already exists. Please sign in.", HttpStatus.BAD_REQUEST);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginDto loginDto) {
-        try {
-            return new ResponseEntity<>(userService.authenticateUser(loginDto), HttpStatus.OK);
 
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponseDto>> login(@Valid @RequestBody LoginDto loginDto) {
+        try {
+            AuthResponseDto authResponse = userService.authenticateUser(loginDto);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Login Successful", authResponse));
         } catch (AuthenticationException ex) {
             if (ex instanceof BadCredentialsException) {
-                return new ResponseEntity<>(new AuthResponseDto("Email or password is incorrect.", null,null),
-                        HttpStatus.UNAUTHORIZED);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ApiResponse<>(false, "Email or password is incorrect.", null));
             } else {
-                return new ResponseEntity<>(new AuthResponseDto("An error occurred during authentication. Please Try again", null, null),
-                        HttpStatus.INTERNAL_SERVER_ERROR);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ApiResponse<>(false, "An error occurred during authentication. Please try again.", null));
             }
         }
     }
 
-    @PostMapping("/validateTokens")
-    public ResponseEntity<AuthResponseDto> validateTokens(@RequestBody TokenDto dto) {
-        try {
-            // Validate Both tokens
-            AuthResponseDto tokens = userService.validateTokens(dto.getAccessToken(), dto.getRefreshToken());
 
-            // Tokens valid, return them
-            return new ResponseEntity<>(tokens, HttpStatus.OK);
-        } catch (Exception e) { // Refresh Token invalid, user must sign in again
-            return new ResponseEntity<>(new AuthResponseDto("Could not Authorize, Please sign in.",
-                    null, null) ,HttpStatus.UNAUTHORIZED);
+    @PostMapping("/validateTokens")
+    public ResponseEntity<ApiResponse<AuthResponseDto>> validateTokens(@RequestBody TokenDto dto) {
+        try {
+            AuthResponseDto tokens = userService.validateTokens(dto.getAccessToken(), dto.getRefreshToken());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Tokens valid", tokens));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(false, "Could not authorize, please sign in.", null));
         }
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody RegisterDto registerDto) {
@@ -80,7 +95,8 @@ public class UserController {
 
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "User deleted", null));
     }
 }
