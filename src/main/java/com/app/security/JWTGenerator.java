@@ -36,7 +36,6 @@ public class JWTGenerator {
         
         Date currentDate = new Date();
         Date expireDate;
-
         expireDate = new Date(currentDate.getTime() + SecurityConstants.JWTEXPIRATIONACCESS);
 
         return Jwts.builder()
@@ -55,6 +54,16 @@ public class JWTGenerator {
                 .getBody();
 
         return claims.getSubject();
+    }
+
+    public String getUserIdFromJWT(String token) {
+        Claims claims = Jwts.parserBuilder()
+            .setSigningKey(SecurityConstants.JWTSECRET)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
+
+        return claims.get("userId", String.class);
     }
 
     public boolean validateToken(String token) {
