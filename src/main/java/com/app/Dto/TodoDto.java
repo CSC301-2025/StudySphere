@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class TodoDto {
     
     private String id;
+    private String userID;
     private String description;
     private String sectionID;
     private boolean completed;

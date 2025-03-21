@@ -12,20 +12,23 @@ import java.time.LocalDateTime;
 public class TodoEntity {
     @Id
     private String id;
+    private String userID;
     private String description;
     private String sectionID;
     private boolean completed = false;
     private LocalDateTime dueDate;
 
     // Constructor
-    public TodoEntity(String description, String sectionID) {
+    public TodoEntity(String description, String userID, String sectionID) {
         this.description = description;
+        this.userID = userID;
         this.sectionID = sectionID;
     }
 
     // Constructor with due date
-    public TodoEntity(String description, String sectionID, LocalDateTime dueDate) {
+    public TodoEntity(String description, String userID, String sectionID, LocalDateTime dueDate) {
         this.description = description;
+        this.userID = userID;
         this.sectionID = sectionID;
         this.dueDate = dueDate;
     }

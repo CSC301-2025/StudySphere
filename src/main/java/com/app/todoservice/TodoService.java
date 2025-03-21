@@ -19,18 +19,18 @@ public class TodoService {
     }
 
     // Get todo by id
-    public TodoEntity getTodoById(String id) {
-        return todoRepository.findById(id).orElse(null);
+    public TodoEntity getTodoById(String userID, String id) {
+        return todoRepository.getTodoById(userID, id);
     }
 
     // Get all todos
-    public List<TodoEntity> getAllTodos() {
-        return todoRepository.findAll();
+    public List<TodoEntity> getAllTodos(String userID) {
+        return todoRepository.getTodosByUserID(userID).orElse(null);
     }
 
     // Get todos by section id
-    public List<TodoEntity> getTodosBySectionID(String id) {
-        return todoRepository.getTodosBySectionID(id).orElse(null);
+    public List<TodoEntity> getTodosBySectionID(String userID, String id) {
+        return todoRepository.getTodosBySectionID(userID, id).orElse(null);
     }
 
     // Convert a TodoEntity to a TodoDto that is returned to the client as a response
@@ -50,17 +50,20 @@ public class TodoService {
     }
 
     // Save a new todo to the database
-    public TodoEntity savetodo(TodoDto dto) {
+    public TodoEntity savetodo(String userID, TodoDto dto) {
 
         // Create a new todo
-        TodoEntity todo = new TodoEntity(dto.getDescription(), dto.getSectionID());
+        TodoEntity todo = new TodoEntity(dto.getDescription(), dto.getUserID(), dto.getSectionID());
 
         return todoRepository.save(todo);
     }
 
     // Delete a todo from the database
-    public void deletetodo(String id) {
-        todoRepository.deleteById(id);
+    public void deletetodo(String userID, String id) {
+
+        TodoEntity todo = todoRepository.getTodoById(userID, id);
+
+        todoRepository.delete(todo);
     }
 
 
