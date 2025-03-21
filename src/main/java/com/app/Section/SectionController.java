@@ -37,7 +37,7 @@ public class SectionController {
     }
 
     // put request to update a section
-    @PutMapping
+    @PatchMapping
     public ResponseEntity<SectionEntity> updateSection(@RequestBody SectionDto sectionDto) {
         return new ResponseEntity<>(sectionService.updateSection(sectionDto), HttpStatus.OK);
     }
