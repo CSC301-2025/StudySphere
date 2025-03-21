@@ -41,7 +41,7 @@ public class TodoController {
     }
 
     // Create a new todo
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<String> createTodo(@RequestBody TodoDto todoDto) {
 
         // Save todo entity to database
