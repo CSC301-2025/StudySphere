@@ -31,11 +31,17 @@ public class SectionService {
         Optional<SectionEntity> optional_Entity = sectionRepository.findById(sectionDto.getSection_id());
 
         if (optional_Entity.isPresent()) {
-            // SectionEntity sectionEntity = (SectionEntity) optional_Entity;
-            // if (!sectionDto.getSection_name().isEmpty()) {
-            //     optional_Entity.setSection_name(sectionDto.getSection_name());
-            // }
-            return sectionRepository.save(toEntity(sectionDto));
+            SectionEntity sectionEntity = optional_Entity.get();
+            
+            if (sectionDto.getSection_name() != null) {
+                sectionEntity.setSection_name(sectionDto.getSection_name());
+            }
+            
+            if (sectionDto.getSection_colour() != null) {
+                sectionEntity.setSection_colour(sectionDto.getSection_colour());
+            }
+            
+            return sectionRepository.save(sectionEntity);
         } else {
             return new SectionEntity();
         }
