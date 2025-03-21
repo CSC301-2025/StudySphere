@@ -1,7 +1,7 @@
-package com.example.task.controller;
+package com.app.task;
 
-import com.example.task.model.TaskRequest;
-import com.example.calendar.model.Event;  // You can share common models or create a separate Event DTO
+import com.app.calendar.CalendarEvent;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,14 +23,14 @@ public class TaskController {
     public ResponseEntity<String> createTask(@RequestBody TaskRequest taskRequest) {
         // Logic to create the task (e.g., saving to a database) would go here.
         // Immediately create a corresponding calendar event:
-        Event event = new Event();
+        CalendarEvent event = new CalendarEvent();
         event.setTitle("Task: " + taskRequest.getTitle());
         event.setDescription(taskRequest.getDescription());
         // Use the task due date as the event date
         event.setEventDate(taskRequest.getDueDate() != null ? taskRequest.getDueDate() : LocalDateTime.now());
         
         // Call the calendar microservice to create an event
-        ResponseEntity<Event> response = restTemplate.postForEntity(CALENDAR_SERVICE_URL, event, Event.class);
+        ResponseEntity<CalendarEvent> response = restTemplate.postForEntity(CALENDAR_SERVICE_URL, event, CalendarEvent.class);
 
         if (response.getStatusCode().is2xxSuccessful()) {
             return ResponseEntity.ok("Task and calendar event created successfully!");
