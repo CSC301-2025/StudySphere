@@ -34,21 +34,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .exceptionHandling(exceptionHandling ->
+                exceptionHandling.authenticationEntryPoint(authEntryPoint))
+            .sessionManagement(sessionManagement ->
+                sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh").permitAll()
+                // All other endpoints require a valid JWT
+                .anyRequest().authenticated())
+            .httpBasic(withDefaults());
 
-            http
-                .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exceptionHandling ->
-                        exceptionHandling.authenticationEntryPoint(authEntryPoint))
-                .sessionManagement(sessionManagement ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers("api/auth/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasRole("USER")
-                        .anyRequest().authenticated())
-                .httpBasic(withDefaults());
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-            http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-            return http.build();
+        return http.build();
     }
 
     @Bean
