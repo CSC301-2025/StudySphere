@@ -6,7 +6,7 @@ import java.util.List;
 @Data
 public class UserDto {
 
-    private Long id;
+    private String id;
 
     private String firstName;
 
@@ -17,6 +17,8 @@ public class UserDto {
     private String phoneNumber;
 
     private List<String> roles;
+
+    private String recoveryEmail;
 
     public UserDto() {}
 }

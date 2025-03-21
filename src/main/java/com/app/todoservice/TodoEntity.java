@@ -54,7 +54,6 @@ public class TodoEntity {
     public String getSectionID() {
         return this.sectionID;
     }
-
     // Get due date
     public LocalDateTime getDueDate() {
         return this.dueDate;
@@ -64,5 +63,4 @@ public class TodoEntity {
     public void setDueDate(LocalDateTime dueDate) {
         this.dueDate = dueDate;
     }
-
 }
