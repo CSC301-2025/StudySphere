@@ -16,6 +16,7 @@ public class JWTGenerator {
 
     // Secret Key
     private final SecretKey key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SecurityConstants.JWTSECRET));
+    
     public String generateRefreshToken(Authentication authentication) {
 
         String username = authentication.getName();
