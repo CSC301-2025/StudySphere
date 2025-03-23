@@ -55,8 +55,6 @@ public class JWTGenerator {
                 .parseClaimsJws(token)
                 .getBody();
         
-        System.out.println("Getting User ID in JWTGenerator getUserIdFromJWT");
-        System.out.println(claims.getSubject());
         return claims.getSubject();  // Retrieve the user id
     }
 

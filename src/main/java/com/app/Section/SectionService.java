@@ -14,21 +14,20 @@ public class SectionService {
         this.sectionRepository = sectionRepository;
     }
 
-    public List<SectionEntity> getAllSections() {
-        return sectionRepository.findAll();
+    public List<SectionEntity> getAllSections(String userID) {
+        return sectionRepository.getSectionsByUserID(userID).orElse(null);
     }
 
-    public SectionEntity getSectionById(String id) {
-        return sectionRepository.findById(id).orElse(null);
+    public SectionEntity getSectionById(String userID, String id) {
+        return sectionRepository.findByUserIDAndSectionId(userID, id).orElse(null);
     }
 
-    public SectionEntity addSection(SectionDto sectionDto) {
-        return sectionRepository.save(toEntity(sectionDto));
-
+    public SectionEntity addSection(String userID, SectionDto sectionDto) {
+        return sectionRepository.save(toEntity(userID, sectionDto));
     }
 
-    public SectionEntity updateSection(SectionDto sectionDto) {
-        Optional<SectionEntity> optional_Entity = sectionRepository.findById(sectionDto.getSection_id());
+    public SectionEntity updateSection(String userID, SectionDto sectionDto) {
+        Optional<SectionEntity> optional_Entity = sectionRepository.findByUserIDAndSectionId(userID, sectionDto.getSection_id());
 
         if (optional_Entity.isPresent()) {
             SectionEntity sectionEntity = optional_Entity.get();
@@ -47,13 +46,18 @@ public class SectionService {
         }
     }
 
-    public void deleteSection(String id) {
-        sectionRepository.deleteById(id);
+    public void deleteSection(String userID, String id) {
+        Optional<SectionEntity> optional_Entity = sectionRepository.findByUserIDAndSectionId(userID, id);
+        if (optional_Entity.isPresent()) {
+            SectionEntity sectionEntity = optional_Entity.get();
+            sectionRepository.delete(sectionEntity);
+        }
     }
 
-    private SectionEntity toEntity(SectionDto sectionDto) {
+    private SectionEntity toEntity(String userID, SectionDto sectionDto) {
         SectionEntity sectionEntity = new SectionEntity(
             sectionDto.getSection_id(),
+            userID,
             sectionDto.getSection_name(),
             sectionDto.getSection_colour()
         );

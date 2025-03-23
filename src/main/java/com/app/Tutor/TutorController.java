@@ -5,6 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.Dto.*;
+import com.app.security.JWTAuthenticationFilter;
+import com.app.security.JWTGenerator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
@@ -12,10 +16,11 @@ import java.util.List;
 @RequestMapping("api/Tutor")
 public class TutorController {
     private final TutorService tutorService;
+    JWTGenerator jwt;
 
-    public TutorController(TutorService tutorService) {
+    public TutorController(TutorService tutorService, JWTGenerator jwt) {
         this.tutorService = tutorService;
-
+        this.jwt = jwt;
     }
 
     // get request to get all tutors
@@ -32,20 +37,26 @@ public class TutorController {
 
     // post request to add a tutor
     @PostMapping
-    public ResponseEntity<TutorEntity> addTutor(@RequestBody TutorDto tutorDto) {
-        return new ResponseEntity<>(tutorService.addTutor(tutorDto), HttpStatus.CREATED);
+    public ResponseEntity<TutorEntity> addTutor(HttpServletRequest request, @RequestBody TutorDto tutorDto) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
+        String userID = jwt.getUserIdFromJWT(token);
+        return new ResponseEntity<>(tutorService.addTutor(userID, tutorDto), HttpStatus.CREATED);
     }
 
     // put request to update a tutor
     @PatchMapping
-    public ResponseEntity<TutorEntity> updateTutor(@RequestBody TutorDto tutorDto) {
-        return new ResponseEntity<>(tutorService.updateTutor(tutorDto), HttpStatus.OK);
+    public ResponseEntity<TutorEntity> updateTutor(HttpServletRequest request, @RequestBody TutorDto tutorDto) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
+        String userID = jwt.getUserIdFromJWT(token);
+        return new ResponseEntity<>(tutorService.updateTutor(userID, tutorDto), HttpStatus.OK);
     }
 
-    // delete request to delete a tutor
-    @DeleteMapping("/{id}")
-    public void deleteTutor(@PathVariable String id) {
-        tutorService.deleteTutor(id);
+    // delete request to delete a tutor based on the userID passed in the token
+    @DeleteMapping()
+    public void deleteTutor(HttpServletRequest request) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
+        String userID = jwt.getUserIdFromJWT(token);
+        tutorService.deleteTutor(userID);
     }
 
 }

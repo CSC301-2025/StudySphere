@@ -28,18 +28,13 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        System.out.println("Filtering request");
         String token = getJWTFromRequest(request);
 
         // Find token and check if it is valid
         if (StringUtils.hasText(token) && tokenGenerator.validateToken(token)) {
-            System.out.println("validating ");
             // Gets the user that is creating the request
             String userId = tokenGenerator.getUserIdFromJWT(token);
-            System.out.println("Getting UserId");
-            System.out.println(userId);
             UserDetails userDetails = customUserDetailsService.loadUserById(userId);
-            System.out.println("Getting User2");
 
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -47,16 +42,15 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         }
+
         // Moves filterChain to the next filter
         filterChain.doFilter(request, response);
-        System.out.println("Getting User Final");
-
     }
 
-    private String getJWTFromRequest(HttpServletRequest request) {
+    public static String getJWTFromRequest(HttpServletRequest request) {        
         String bearerToken = request.getHeader("Authorization");
 
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer")) {
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
