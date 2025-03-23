@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.Dto.*;
@@ -34,7 +35,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDto>> getUser(@PathVariable String id) {
-        System.out.println(3452);
+        System.out.println(3453);
         UserEntity user = userService.getUserById(id);
         if (user != null) {
             return ResponseEntity.ok(new ApiResponse<>(true, "User found", userService.convertToDto(user)));
@@ -43,7 +44,16 @@ public class UserController {
                 .body(new ApiResponse<>(false, "User not found", null));
     }
 
-
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser() {
+    // Get the user from the security context
+    UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if(user != null){
+        return ResponseEntity.ok(new ApiResponse<>(true, "User found", userService.convertToDto(user)));
+    }
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ApiResponse<>(false, "User not found", null));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> createUser(@Valid @RequestBody RegisterDto registerDto) {

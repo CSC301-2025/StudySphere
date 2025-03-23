@@ -84,13 +84,17 @@ public class UserService {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        String userId = user.getId();
+        System.out.println("User ID: " + userId);
+
         String refreshToken = jwtGenerator.generateRefreshToken(authentication);
-        String accessToken = jwtGenerator.generateAccessToken(refreshToken, loginDto.getEmail());
+        String accessToken = jwtGenerator.generateAccessToken(userId);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Getting the user
-        Optional<UserEntity> user = userRepository.findByEmail(loginDto.getEmail());
-        UserDto userDto = convertToDto(user.get());
+        Optional<UserEntity> userOptional = userRepository.findById(userId);
+        UserDto userDto = convertToDto(userOptional.get());
 
         return new AuthResponseDto(accessToken, refreshToken, userDto);
     }
@@ -99,7 +103,7 @@ public class UserService {
 
         // Validate refresh Token, throws error if token not valid
         jwtGenerator.validateToken(refreshToken);
-        Optional<UserEntity> user = userRepository.findByEmail(jwtGenerator.getUsernameFromJWT(accessToken));
+        Optional<UserEntity> user = userRepository.findById(jwtGenerator.getUserIdFromJWT(accessToken));
         UserDto userDto = convertToDto(user.get());
 
         try { // Validate Access Token
@@ -107,8 +111,7 @@ public class UserService {
             // Both Tokens valid, user is authenticated
             return new AuthResponseDto(accessToken, refreshToken, userDto);
         } catch (Exception e) { // Access token invalid, create new one using refresh token
-            String newToken = jwtGenerator.generateAccessToken(refreshToken,
-                    jwtGenerator.getUsernameFromJWT(refreshToken));
+            String newToken = jwtGenerator.generateAccessToken(jwtGenerator.getUserIdFromJWT(refreshToken));
 
             return new AuthResponseDto(newToken, refreshToken, userDto);
         }
@@ -118,17 +121,17 @@ public class UserService {
         // Validate the refresh token
         jwtGenerator.validateToken(refreshToken);
     
-        String username = jwtGenerator.getUsernameFromJWT(refreshToken);
+        String userId = jwtGenerator.getUserIdFromJWT(refreshToken);
     
         // Retrieve the user
-        Optional<UserEntity> userOpt = userRepository.findByEmail(username);
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (!userOpt.isPresent()) {
             throw new RuntimeException("User not found");
         }
         UserDto userDto = convertToDto(userOpt.get());
     
         // Generate a new access token
-        String newAccessToken = jwtGenerator.generateAccessToken(refreshToken, username);
+        String newAccessToken = jwtGenerator.generateAccessToken(userId);
     
         return new AuthResponseDto(newAccessToken, refreshToken, userDto);
     }
