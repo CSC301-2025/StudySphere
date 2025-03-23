@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.Dto.*;
+import com.app.security.JWTGenerator;
 
 import java.util.List;
 
@@ -12,10 +13,11 @@ import java.util.List;
 @RequestMapping("api/Tutor")
 public class TutorController {
     private final TutorService tutorService;
+    JWTGenerator jwt;
 
     public TutorController(TutorService tutorService) {
         this.tutorService = tutorService;
-
+        this.jwt = new JWTGenerator();
     }
 
     // get request to get all tutors
@@ -32,20 +34,23 @@ public class TutorController {
 
     // post request to add a tutor
     @PostMapping
-    public ResponseEntity<TutorEntity> addTutor(@RequestBody TutorDto tutorDto) {
-        return new ResponseEntity<>(tutorService.addTutor(tutorDto), HttpStatus.CREATED);
+    public ResponseEntity<TutorEntity> addTutor(@RequestHeader("Authorization") String token, @RequestBody TutorDto tutorDto) {
+        String userID = jwt.getUserIdFromJWT(token);
+        return new ResponseEntity<>(tutorService.addTutor(userID, tutorDto), HttpStatus.CREATED);
     }
 
     // put request to update a tutor
     @PatchMapping
-    public ResponseEntity<TutorEntity> updateTutor(@RequestBody TutorDto tutorDto) {
-        return new ResponseEntity<>(tutorService.updateTutor(tutorDto), HttpStatus.OK);
+    public ResponseEntity<TutorEntity> updateTutor(@RequestHeader("Authorization") String token, @RequestBody TutorDto tutorDto) {
+        String userID = jwt.getUserIdFromJWT(token);
+        return new ResponseEntity<>(tutorService.updateTutor(userID, tutorDto), HttpStatus.OK);
     }
 
-    // delete request to delete a tutor
-    @DeleteMapping("/{id}")
-    public void deleteTutor(@PathVariable String id) {
-        tutorService.deleteTutor(id);
+    // delete request to delete a tutor based on the userID passed in the token
+    @DeleteMapping()
+    public void deleteTutor(@RequestHeader("Authorization") String token) {
+        String userID = jwt.getUserIdFromJWT(token);
+        tutorService.deleteTutor(userID);
     }
 
 }

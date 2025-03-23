@@ -22,13 +22,12 @@ public class TutorService {
         return tutorRepository.findById(id).orElse(null);
     }
 
-    public TutorEntity addTutor(TutorDto tutorDto) {
-        return tutorRepository.save(toEntity(tutorDto));
-
+    public TutorEntity addTutor(String userID, TutorDto tutorDto) {
+        return tutorRepository.save(toEntity(userID, tutorDto));
     }
 
-    public TutorEntity updateTutor(TutorDto tutorDto) {
-        Optional<TutorEntity> optional_Entity = tutorRepository.findById(tutorDto.getUser_id());
+    public TutorEntity updateTutor(String userID, TutorDto tutorDto) {
+        Optional<TutorEntity> optional_Entity = tutorRepository.findById(userID);
 
         if (optional_Entity.isPresent()) {
             TutorEntity tutorEntity = optional_Entity.get();
@@ -55,9 +54,9 @@ public class TutorService {
         tutorRepository.deleteById(id);
     }
 
-    private TutorEntity toEntity(TutorDto tutorDto) {
+    private TutorEntity toEntity(String userID, TutorDto tutorDto) {
         TutorEntity tutorEntity = new TutorEntity(
-            tutorDto.getUser_id(),
+            userID,
             tutorDto.getStudent_id_list(),
             tutorDto.getPost_id_list(),
             tutorDto.getReview_id_list()

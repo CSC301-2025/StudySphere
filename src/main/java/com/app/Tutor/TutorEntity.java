@@ -12,14 +12,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TutorEntity {
     @Id
-    private String user_id;
+    private String userID;
     private List<String> student_id_list;
     private List<String> post_id_list;
     private List<String> review_id_list;
 
     // Constructor
-    public TutorEntity(String user_id, List<String> student_id_list, List<String> post_id_list, List<String> review_id_list) {
-        this.user_id = user_id;
+    public TutorEntity(String userID, List<String> student_id_list, List<String> post_id_list, List<String> review_id_list) {
+        this.userID = userID;
         this.student_id_list = student_id_list;
         this.post_id_list = post_id_list;
         this.review_id_list = review_id_list;
@@ -27,11 +27,11 @@ public class TutorEntity {
 
     // Getters and Setters
     public String getUser_id() {
-        return user_id;
+        return userID;
     }
 
-    public void setUser_id(String user_id) {
-        this.user_id = user_id;
+    public void setUser_id(String userID) {
+        this.userID = userID;
     }
 
     public List<String> getStudent_id_list() {
