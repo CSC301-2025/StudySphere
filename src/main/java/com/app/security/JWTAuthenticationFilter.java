@@ -36,7 +36,10 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("validating ");
             // Gets the user that is creating the request
             String userId = tokenGenerator.getUserIdFromJWT(token);
+            System.out.println("Getting UserId");
+            System.out.println(userId);
             UserDetails userDetails = customUserDetailsService.loadUserById(userId);
+            System.out.println("Getting User2");
 
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -46,6 +49,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         }
         // Moves filterChain to the next filter
         filterChain.doFilter(request, response);
+        System.out.println("Getting User Final");
 
     }
 
