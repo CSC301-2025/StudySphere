@@ -2,10 +2,10 @@ package com.app.calendar;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.ArrayList;
 
 @Service
 public class CalendarService {
@@ -13,13 +13,15 @@ public class CalendarService {
     @Autowired
     private CalendarRepository calendarRepository;
 
-    public CalendarEvent addEvent(CalendarEvent event) {
-        // Simply persist the event; MongoDB will handle id generation.
+    // Add event with userID: set the event's userID before saving
+    public CalendarEvent addEvent(String userID, CalendarEvent event) {
+        event.setUserID(userID);
         return calendarRepository.save(event);
     }
 
-    public CalendarEvent updateEvent(String id, CalendarEvent updatedEvent) {
-        Optional<CalendarEvent> optionalEvent = calendarRepository.findById(id);
+    // Update event: find the event by both userID and id
+    public CalendarEvent updateEvent(String userID, String id, CalendarEvent updatedEvent) {
+        Optional<CalendarEvent> optionalEvent = calendarRepository.getCalendarEventByUserIDAndId(userID, id);
         if (optionalEvent.isPresent()){
             CalendarEvent existingEvent = optionalEvent.get();
             existingEvent.setTitle(updatedEvent.getTitle());
@@ -30,8 +32,9 @@ public class CalendarService {
         throw new NoSuchElementException("Event not found");
     }
 
-    public CalendarEvent removeEvent(String id) {
-        Optional<CalendarEvent> optionalEvent = calendarRepository.findById(id);
+    // Remove event: ensure the event belongs to the user
+    public CalendarEvent removeEvent(String userID, String id) {
+        Optional<CalendarEvent> optionalEvent = calendarRepository.getCalendarEventByUserIDAndId(userID, id);
         if (optionalEvent.isPresent()){
             CalendarEvent event = optionalEvent.get();
             calendarRepository.deleteById(id);
@@ -40,7 +43,8 @@ public class CalendarService {
         throw new NoSuchElementException("Event not found");
     }
 
-    public List<CalendarEvent> getAllEvents() {
-        return calendarRepository.findAll();
+    // Get all events for a given user
+    public List<CalendarEvent> getAllEvents(String userID) {
+        return calendarRepository.getCalendarEventsByUserID(userID).orElse(new ArrayList<>());
     }
 }

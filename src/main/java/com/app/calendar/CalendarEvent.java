@@ -11,6 +11,9 @@ public class CalendarEvent {
     private String title;
     private String description;
     private LocalDateTime eventDate;
+    
+    // New userID field to associate an event with a user
+    private String userID;
 
     public CalendarEvent() {}
 
@@ -45,5 +48,13 @@ public class CalendarEvent {
     }
     public void setEventDate(LocalDateTime eventDate) {
         this.eventDate = eventDate;
+    }
+
+    // New getters and setters for userID
+    public String getUserID() {
+        return userID;
+    }
+    public void setUserID(String userID) {
+        this.userID = userID;
     }
 }
