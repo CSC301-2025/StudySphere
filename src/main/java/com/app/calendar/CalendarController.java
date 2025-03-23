@@ -40,4 +40,10 @@ public class CalendarController {
         String userID = jwt.getUserIdFromJWT(token);
         return calendarService.removeEvent(userID, id);
     }
+
+    @PostMapping("/sync")
+    public List<CalendarEvent> syncTodos(@RequestHeader("Authorization") String token) {
+    String userID = jwt.getUserIdFromJWT(token);
+    return calendarService.syncTodosToCalendar(userID);
+}
 }
