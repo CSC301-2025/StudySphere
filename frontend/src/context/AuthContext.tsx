@@ -53,10 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const response: AuthResponse = await authService.login(credentials);
-      setUser(response.user);
+      setUser(response.userDto);
       toast({
         title: response.message,
-        description: `Welcome back, ${response.data.userDto.firstName}!`,
+        description: `Welcome back, ${response.userDto.firstName}!`,
       });
       // Optionally, store tokens if needed:
       // authService.storeTokens(response.data.accessToken, response.data.refreshToken);
