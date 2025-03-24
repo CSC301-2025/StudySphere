@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 import React, { useState } from 'react';
 import { Plus, Search, Bookmark, Book, CalendarClock, File, MoreHorizontal } from 'lucide-react';
@@ -229,59 +228,11 @@ const Sections = () => {
           ))}
         </div>
       )}
-=======
-// src/pages/Sections.tsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-
-const Sections: React.FC = () => {
-  const [sections, setSections] = useState<string[]>([]);
-  const [newSectionName, setNewSectionName] = useState('');
-
-  const handleAddSection = () => {
-    if (!newSectionName.trim()) return;
-    setSections((prev) => [...prev, newSectionName.trim()]);
-    setNewSectionName('');
-  };
-
-  return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Sections</h2>
-
-      <div style={styles.addSectionContainer}>
-        <input
-          type="text"
-          placeholder="Enter section name (e.g. 'Biology')"
-          value={newSectionName}
-          onChange={(e) => setNewSectionName(e.target.value)}
-          style={styles.input}
-        />
-        <button onClick={handleAddSection} style={styles.addButton}>
-          Add Section
-        </button>
-      </div>
-
-      <div style={styles.coursePageContainer}>
-        <Link to="/courses" style={{ textDecoration: 'none' }}>
-          <button style={styles.sectionButton}>Go to Course Page</button>
-        </Link>
-      </div>
-
-      <div style={styles.sectionsList}>
-        {sections.map((section, index) => (
-          <button key={index} style={styles.sectionButton}>
-            {section}
-          </button>
-        ))}
-      </div>
->>>>>>> 24850f5 (SCRUM-134 Added Sections Tab and ability to add new sections frontend)
     </div>
   );
 };
 
 export default Sections;
-<<<<<<< HEAD
-=======
 
 const styles: { [key: string]: React.CSSProperties } = {
   /* 
@@ -337,4 +288,3 @@ const styles: { [key: string]: React.CSSProperties } = {
     textTransform: 'capitalize',
   },
 };
->>>>>>> 24850f5 (SCRUM-134 Added Sections Tab and ability to add new sections frontend)
