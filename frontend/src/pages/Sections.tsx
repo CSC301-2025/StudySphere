@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 import React, { useState } from 'react';
 import { Plus, Search, Bookmark, Book, CalendarClock, File, MoreHorizontal } from 'lucide-react';
@@ -23,7 +22,7 @@ interface SectionType {
 }
 
 const Sections = () => {
-  const { courses, createCourse } = useCourses();
+  const { courses, getCourse } = useCourses();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSection, setNewSection] = useState<Omit<SectionType, 'id' | 'createdAt'>>({
@@ -43,15 +42,18 @@ const Sections = () => {
 
   // Handle adding a new section
   const handleAddSection = () => {
-    const section = {
+    // Note: We need to implement this without using addCourse which doesn't exist
+    // For now, we'll just close the dialog since we can't add a new course
+    setNewSection({ title: '', description: '', instructor: '', type: 'course', color: '#6D28D9' });
+    setIsAddSectionOpen(false);
+    
+    // TODO: Implement the actual course creation when that functionality is available
+    // This would typically call a function like addCourse or createCourse
+    console.log('New section data:', {
       ...newSection,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-    };
-    
-    createCourse(section as any);
-    setNewSection({ title: '', description: '', instructor: '', type: 'course', color: '#6D28D9' });
-    setIsAddSectionOpen(false);
+    });
   };
 
   // Function to get icon based on section type
@@ -229,112 +231,8 @@ const Sections = () => {
           ))}
         </div>
       )}
-=======
-// src/pages/Sections.tsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-
-const Sections: React.FC = () => {
-  const [sections, setSections] = useState<string[]>([]);
-  const [newSectionName, setNewSectionName] = useState('');
-
-  const handleAddSection = () => {
-    if (!newSectionName.trim()) return;
-    setSections((prev) => [...prev, newSectionName.trim()]);
-    setNewSectionName('');
-  };
-
-  return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Sections</h2>
-
-      <div style={styles.addSectionContainer}>
-        <input
-          type="text"
-          placeholder="Enter section name (e.g. 'Biology')"
-          value={newSectionName}
-          onChange={(e) => setNewSectionName(e.target.value)}
-          style={styles.input}
-        />
-        <button onClick={handleAddSection} style={styles.addButton}>
-          Add Section
-        </button>
-      </div>
-
-      <div style={styles.coursePageContainer}>
-        <Link to="/courses" style={{ textDecoration: 'none' }}>
-          <button style={styles.sectionButton}>Go to Course Page</button>
-        </Link>
-      </div>
-
-      <div style={styles.sectionsList}>
-        {sections.map((section, index) => (
-          <button key={index} style={styles.sectionButton}>
-            {section}
-          </button>
-        ))}
-      </div>
->>>>>>> 24850f5 (SCRUM-134 Added Sections Tab and ability to add new sections frontend)
     </div>
   );
 };
 
 export default Sections;
-<<<<<<< HEAD
-=======
-
-const styles: { [key: string]: React.CSSProperties } = {
-  /* 
-    1) Make the container fill the viewport width.
-    2) Use flex to center items horizontally (alignItems: 'center').
-    3) Use marginTop or padding if you want space at the top.
-  */
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',   // horizontally center all items
-    justifyContent: 'flex-start',
-    minHeight: '100vh',     // optional if you want a full screen container
-    width: '100vw',
-    paddingTop: '50px',
-    boxSizing: 'border-box',
-  },
-  heading: {
-    marginBottom: '20px',
-    fontSize: '1.8rem',
-    color: '#ffffff',       // if you want white text on a dark background
-  },
-  addSectionContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '20px',
-    gap: '8px',
-  },
-  input: {
-    padding: '8px',
-    fontSize: '16px',
-  },
-  addButton: {
-    padding: '8px 16px',
-    fontSize: '16px',
-    cursor: 'pointer',
-  },
-  coursePageContainer: {
-    marginBottom: '20px',
-  },
-  sectionsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    alignItems: 'center',  // ensures the newly added section buttons are centered
-  },
-  sectionButton: {
-    padding: '10px 20px',
-    fontSize: '16px',
-    cursor: 'pointer',
-    minWidth: '150px',
-    textTransform: 'capitalize',
-  },
-};
->>>>>>> 24850f5 (SCRUM-134 Added Sections Tab and ability to add new sections frontend)
