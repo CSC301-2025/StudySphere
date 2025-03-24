@@ -4,7 +4,9 @@ import org.springframework.stereotype.Service;
 
 import com.app.Dto.TodoDto;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TodoService {
@@ -24,13 +26,25 @@ public class TodoService {
     }
 
     // Get all todos
-    public List<TodoEntity> getAllTodos(String userID) {
-        return todoRepository.getTodosByUserID(userID).orElse(null);
+    public List<TodoEntity> getAllTodos(String userID, LocalDateTime startDate, LocalDateTime endDate) {
+        List<TodoEntity> todos = todoRepository.getTodosByUserID(userID).orElse(null);
+
+        // Apply filtering for dates (if provided)
+        return todos.stream()
+            .filter(todo -> (startDate == null || !todo.getDueDate().isBefore(startDate)))
+            .filter(todo -> (endDate == null || !todo.getDueDate().isAfter(endDate)))
+            .collect(Collectors.toList());
     }
 
     // Get todos by section id
-    public List<TodoEntity> getTodosBySectionID(String userID, String id) {
-        return todoRepository.getTodosBySectionID(userID, id).orElse(null);
+    public List<TodoEntity> getTodosBySectionID(String userID, String id, LocalDateTime startDate, LocalDateTime endDate) {
+        List<TodoEntity> todos = todoRepository.getTodosByUserIDAndSectionID(userID, id).orElse(null);
+
+        // Apply filtering for dates (if provided)
+        return todos.stream()
+        .filter(todo -> (startDate == null || !todo.getDueDate().isBefore(startDate)))
+        .filter(todo -> (endDate == null || !todo.getDueDate().isAfter(endDate)))
+        .collect(Collectors.toList());
     }
 
     // Convert a TodoEntity to a TodoDto that is returned to the client as a response
