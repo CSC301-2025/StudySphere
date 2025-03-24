@@ -4,7 +4,9 @@ import org.springframework.stereotype.Service;
 
 import com.app.Dto.TodoDto;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TodoService {
@@ -20,17 +22,29 @@ public class TodoService {
 
     // Get todo by id
     public TodoEntity getTodoById(String userID, String id) {
-        return todoRepository.getTodoById(userID, id);
+        return todoRepository.getTodoByUserIDAndId(userID, id).orElse(null);
     }
 
     // Get all todos
-    public List<TodoEntity> getAllTodos(String userID) {
-        return todoRepository.getTodosByUserID(userID).orElse(null);
+    public List<TodoEntity> getAllTodos(String userID, LocalDateTime startDate, LocalDateTime endDate) {
+        List<TodoEntity> todos = todoRepository.getTodosByUserID(userID).orElse(null);
+
+        // Apply filtering for dates (if provided)
+        return todos.stream()
+            .filter(todo -> (startDate == null || !todo.getDueDate().isBefore(startDate)))
+            .filter(todo -> (endDate == null || !todo.getDueDate().isAfter(endDate)))
+            .collect(Collectors.toList());
     }
 
     // Get todos by section id
-    public List<TodoEntity> getTodosBySectionID(String userID, String id) {
-        return todoRepository.getTodosBySectionID(userID, id).orElse(null);
+    public List<TodoEntity> getTodosBySectionID(String userID, String id, LocalDateTime startDate, LocalDateTime endDate) {
+        List<TodoEntity> todos = todoRepository.getTodosByUserIDAndSectionID(userID, id).orElse(null);
+
+        // Apply filtering for dates (if provided)
+        return todos.stream()
+        .filter(todo -> (startDate == null || !todo.getDueDate().isBefore(startDate)))
+        .filter(todo -> (endDate == null || !todo.getDueDate().isAfter(endDate)))
+        .collect(Collectors.toList());
     }
 
     // Convert a TodoEntity to a TodoDto that is returned to the client as a response
@@ -52,8 +66,16 @@ public class TodoService {
     // Save a new todo to the database
     public TodoEntity savetodo(String userID, TodoDto dto) {
 
-        // Create a new todo
-        TodoEntity todo = new TodoEntity(dto.getDescription(), dto.getUserID(), dto.getSectionID());
+        // Declare todo entity
+        TodoEntity todo;
+
+        // If due date was passed, initialize it with the due date, otherwise create it without
+        if (dto.getDueDate() != null) {
+            todo = new TodoEntity(dto.getDescription(), userID, dto.getSectionID(), dto.getDueDate());
+        }
+        else {
+            todo = new TodoEntity(dto.getDescription(), userID, dto.getSectionID());
+        }
 
         return todoRepository.save(todo);
     }
@@ -61,9 +83,12 @@ public class TodoService {
     // Delete a todo from the database
     public void deletetodo(String userID, String id) {
 
-        TodoEntity todo = todoRepository.getTodoById(userID, id);
+        Optional<TodoEntity> todo = todoRepository.getTodoByUserIDAndId(userID, id);
 
-        todoRepository.delete(todo);
+        if(todo.isPresent()) {
+            todoRepository.delete(todo.get());
+        }
+        
     }
 
 
