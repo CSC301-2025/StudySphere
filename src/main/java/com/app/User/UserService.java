@@ -35,7 +35,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public UserEntity getUserById(Long id) {
+    public UserEntity getUserById(String id) {
         return userRepository.findById(id).orElse(null);
     }
 
@@ -45,7 +45,7 @@ public class UserService {
     public UserDto convertToDto(UserEntity user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
-        dto.setEmail(user.getUsername());
+        dto.setEmail(user.getEmail());
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setPhoneNumber(user.getPhoneNumber());
@@ -57,13 +57,12 @@ public class UserService {
      * Saves a new user to the database.
      */
     public UserEntity saveUser(RegisterDto registerDto) {
-
-        // User already exists
-        if (userRepository.existsByUsername(registerDto.getEmail())) {
-            return null;
+        // Check if user already exists
+        if (userRepository.existsByEmail(registerDto.getEmail())) {
+            throw new IllegalArgumentException("A user with this email already exists.");
         }
-
-        // Create a new user
+        
+        // Create a new user entity
         UserEntity user = new UserEntity(
             registerDto.getFirstName(),
             registerDto.getLastName(),
@@ -72,10 +71,12 @@ public class UserService {
             passwordEncoder.encode(registerDto.getPassword()),
             registerDto.getRecoveryEmail()
         );
-
-        Role roles = roleRepository.findByName("USER").get();
-        user.setRoles(Collections.singletonList(roles));
-
+        
+        // Retrieve the role and assign it
+        Role role = roleRepository.findByName("USER")
+            .orElseThrow(() -> new RuntimeException("Role USER not found"));
+        user.setRoles(Collections.singletonList(role));
+        
         return userRepository.save(user);
     }
 
@@ -83,13 +84,17 @@ public class UserService {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        String userId = user.getId();
+        System.out.println("User ID: " + userId);
+
         String refreshToken = jwtGenerator.generateRefreshToken(authentication);
-        String accessToken = jwtGenerator.generateAccessToken(refreshToken, loginDto.getEmail());
+        String accessToken = jwtGenerator.generateAccessToken(userId);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Getting the user
-        Optional<UserEntity> user = userRepository.findByUsername(loginDto.getEmail());
-        UserDto userDto = convertToDto(user.get());
+        Optional<UserEntity> userOptional = userRepository.findById(userId);
+        UserDto userDto = convertToDto(userOptional.get());
 
         return new AuthResponseDto(accessToken, refreshToken, userDto);
     }
@@ -98,7 +103,7 @@ public class UserService {
 
         // Validate refresh Token, throws error if token not valid
         jwtGenerator.validateToken(refreshToken);
-        Optional<UserEntity> user = userRepository.findByUsername(jwtGenerator.getUsernameFromJWT(accessToken));
+        Optional<UserEntity> user = userRepository.findById(jwtGenerator.getUserIdFromJWT(accessToken));
         UserDto userDto = convertToDto(user.get());
 
         try { // Validate Access Token
@@ -106,14 +111,33 @@ public class UserService {
             // Both Tokens valid, user is authenticated
             return new AuthResponseDto(accessToken, refreshToken, userDto);
         } catch (Exception e) { // Access token invalid, create new one using refresh token
-            String newToken = jwtGenerator.generateAccessToken(refreshToken,
-                    jwtGenerator.getUsernameFromJWT(refreshToken));
+            String newToken = jwtGenerator.generateAccessToken(jwtGenerator.getUserIdFromJWT(refreshToken));
 
             return new AuthResponseDto(newToken, refreshToken, userDto);
         }
     }
 
-    public void deleteUser(Long id) {
+    public AuthResponseDto refreshAccessToken(String refreshToken) {
+        // Validate the refresh token
+        jwtGenerator.validateToken(refreshToken);
+    
+        String userId = jwtGenerator.getUserIdFromJWT(refreshToken);
+    
+        // Retrieve the user
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("User not found");
+        }
+        UserDto userDto = convertToDto(userOpt.get());
+    
+        // Generate a new access token
+        String newAccessToken = jwtGenerator.generateAccessToken(userId);
+    
+        return new AuthResponseDto(newAccessToken, refreshToken, userDto);
+    }
+    
+
+    public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
 

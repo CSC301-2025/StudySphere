@@ -13,6 +13,9 @@ const Dashboard: React.FC = () => {
       <Link to="/todo">
         <button style={styles.button}>To Do List</button>
       </Link>
+      <Link to="/courses">
+        <button style={styles.button}>Course Page</button>
+      </Link>
     </div>
   );
 };

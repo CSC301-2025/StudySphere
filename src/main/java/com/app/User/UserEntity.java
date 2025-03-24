@@ -1,16 +1,16 @@
 package com.app.User;
 
 import com.app.Role.Role;
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,13 +21,14 @@ import java.util.stream.Collectors;
 public class UserEntity implements UserDetails {
 
     @Id
-    private Long id;
+    private String id;
 
     private String firstName;
 
     private String lastName;
 
-    @Column(unique = true)
+    // Use @Indexed(unique = true) to enforce a unique index on 'email' in Mongo
+    @Indexed(unique = true)
     private String email;
 
     private String phoneNumber;
@@ -36,23 +37,14 @@ public class UserEntity implements UserDetails {
 
     private String recoveryEmail;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinTable(
-        name = "user_roles", 
-        joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
-    )
-    private List<Role> roles = new ArrayList<>();
-
-        // Relationships
-        // @OneToMany(mappedBy = "user")
-        // private List<Section> sections = new ArrayList<>();
-    
-        // @OneToMany(mappedBy = "user")
-        // private List<Review> reviews = new ArrayList<>();
+    // Use @DBRef for referencing a separate 'Role' collection
+    @DBRef
+    private List<Role> roles;
 
     // Constructor with roles
-    public UserEntity(String firstName, String lastName, String email, String phoneNumber, String password, List<Role> roles, List<String> universities, String recoveryEmail) {
+    public UserEntity(String firstName, String lastName, String email,
+                      String phoneNumber, String password, List<Role> roles,
+                      List<String> universities, String recoveryEmail) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -63,13 +55,17 @@ public class UserEntity implements UserDetails {
     }
 
     // Constructor without explicit roles
-    public UserEntity(String firstName, String lastName, String email, String phoneNumber, String password, String recoveryEmail) {
+    public UserEntity(String firstName, String lastName, String email,
+                      String phoneNumber, String password, String recoveryEmail) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.password = password;
+        this.recoveryEmail = recoveryEmail;
     }
+
+    // === UserDetails Implementation Methods ===
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -79,22 +75,10 @@ public class UserEntity implements UserDetails {
     }
 
     @Override
-    public String getUsername() {  // Return email instead of username
+    public String getUsername() {  // Return email instead of a traditional username
         return this.email;
     }
 
-    public String getName() {
-        return this.firstName + " " + this.lastName;
-    }
-
-    public String getFirstName() {
-        return this.firstName;
-    }
-
-    public String getLastName() {
-        return this.lastName;
-    }
-    
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -113,5 +97,9 @@ public class UserEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public String getName() {
+        return this.firstName + " " + this.lastName;
     }
 }

@@ -1,36 +1,34 @@
-package com.example.calendar.controller;
+package com.app.calendar;
 
-import com.example.calendar.model.Event;
-import com.example.calendar.service.CalendarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/events")
+@RequestMapping("/api/calendar")
 public class CalendarController {
 
     @Autowired
     private CalendarService calendarService;
 
     @GetMapping
-    public List<Event> getEvents() {
+    public List<CalendarEvent> getEvents() {
         return calendarService.getAllEvents();
     }
 
     @PostMapping
-    public Event createEvent(@RequestBody Event event) {
+    public CalendarEvent createEvent(@RequestBody CalendarEvent event) {
         return calendarService.addEvent(event);
     }
 
     @PutMapping("/{id}")
-    public Event updateEvent(@PathVariable Long id, @RequestBody Event event) {
+    public CalendarEvent updateEvent(@PathVariable String id, @RequestBody CalendarEvent event) {
         return calendarService.updateEvent(id, event);
     }
 
     @DeleteMapping("/{id}")
-    public Event deleteEvent(@PathVariable Long id) {
+    public CalendarEvent deleteEvent(@PathVariable String id) {
         return calendarService.removeEvent(id);
     }
 }

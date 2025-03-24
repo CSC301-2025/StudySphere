@@ -1,16 +1,20 @@
-package com.example.calendar.model;
+package com.app.calendar;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
-public class Event {
-    private Long id;
+@Document
+public class CalendarEvent {
+    @Id
+    private String id; // Changed to String for consistency with MongoDB generated ids.
     private String title;
     private String description;
     private LocalDateTime eventDate;
 
-    public Event() {}
+    public CalendarEvent() {}
 
-    public Event(Long id, String title, String description, LocalDateTime eventDate) {
+    public CalendarEvent(String id, String title, String description, LocalDateTime eventDate) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -18,10 +22,10 @@ public class Event {
     }
 
     // Getters and setters
-    public Long getId() {
+    public String getId() {
         return id;
     }
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
     public String getTitle() {
