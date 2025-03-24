@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.app.Dto.TodoDto;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 public class TodoService {
@@ -20,7 +20,7 @@ public class TodoService {
 
     // Get todo by id
     public TodoEntity getTodoById(String userID, String id) {
-        return todoRepository.getTodoById(userID, id);
+        return todoRepository.getTodoByUserIDAndId(userID, id).orElse(null);
     }
 
     // Get all todos
@@ -52,8 +52,16 @@ public class TodoService {
     // Save a new todo to the database
     public TodoEntity savetodo(String userID, TodoDto dto) {
 
-        // Create a new todo
-        TodoEntity todo = new TodoEntity(dto.getDescription(), dto.getUserID(), dto.getSectionID());
+        // Declare todo entity
+        TodoEntity todo;
+
+        // If due date was passed, initialize it with the due date, otherwise create it without
+        if (dto.getDueDate() != null) {
+            todo = new TodoEntity(dto.getDescription(), userID, dto.getSectionID(), dto.getDueDate());
+        }
+        else {
+            todo = new TodoEntity(dto.getDescription(), userID, dto.getSectionID());
+        }
 
         return todoRepository.save(todo);
     }
@@ -61,9 +69,12 @@ public class TodoService {
     // Delete a todo from the database
     public void deletetodo(String userID, String id) {
 
-        TodoEntity todo = todoRepository.getTodoById(userID, id);
+        Optional<TodoEntity> todo = todoRepository.getTodoByUserIDAndId(userID, id);
 
-        todoRepository.delete(todo);
+        if(todo.isPresent()) {
+            todoRepository.delete(todo.get());
+        }
+        
     }
 
 

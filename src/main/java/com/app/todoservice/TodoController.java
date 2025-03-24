@@ -10,6 +10,9 @@ import java.util.List;
 import com.app.Dto.TodoDto;
 
 import com.app.security.JWTGenerator;
+import com.app.security.JWTAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("api/todo")
@@ -22,36 +25,48 @@ public class TodoController {
     JWTGenerator jwt;
     
     // Constructor to set the todoService
-    public TodoController(TodoService todoService) {
+    public TodoController(TodoService todoService, JWTGenerator jwt) {
         this.todoService = todoService;
-        this.jwt = new JWTGenerator();
+        this.jwt = jwt;
     }
 
     // Get all todos
     @GetMapping
-    public List<TodoEntity> getAllTodos(@RequestHeader("Authorization") String token) {
+    public List<TodoEntity> getAllTodos(HttpServletRequest request) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         return todoService.getAllTodos(userID);
     }
 
     // Get todo by id
     @GetMapping("/{id}")
-    public TodoEntity getTodo(@RequestHeader("Authorization") String token, @PathVariable String id) {
+    public ResponseEntity<?> getTodo(HttpServletRequest request, @PathVariable String id) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
-        return todoService.getTodoById(userID, id);
+        
+        // Retrieve todo
+        TodoEntity todo = todoService.getTodoById(userID, id);
+        
+        if (todo == null) {
+            return new ResponseEntity<>("Todo not found", HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(todo, HttpStatus.OK);
     }
 
     // Get all todos by section id
     @GetMapping("/section/{id}")
-    public List<TodoEntity> getTodosBySection(@RequestHeader("Authorization") String token, @PathVariable String id) {
+    public List<TodoEntity> getTodosBySection(HttpServletRequest request, @PathVariable String id) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         return todoService.getTodosBySectionID(userID, id);
     }
 
     // Create a new todo
     @PostMapping
-    public ResponseEntity<String> createTodo(@RequestHeader("Authorization") String token, @RequestBody TodoDto todoDto) {
+    public ResponseEntity<String> createTodo(HttpServletRequest request, @RequestBody TodoDto todoDto) {
 
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
 
         // Save todo entity to database
@@ -68,7 +83,8 @@ public class TodoController {
 
     // Delete a task (if it exists)
     @DeleteMapping("/{id}")
-    public void deleteTodo(@RequestHeader("Authorization") String token, @PathVariable String id) {
+    public void deleteTodo(HttpServletRequest request, @PathVariable String id) {
+        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         todoService.deletetodo(userID, id);
     }

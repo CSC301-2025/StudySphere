@@ -14,5 +14,5 @@ public interface TodoRepository extends MongoRepository<TodoEntity, String> {
     Optional<List<TodoEntity>> getTodosByUserID(String userID);
 
     // Get a todo by the specified id
-    TodoEntity getTodoById(String userID, String id);
+    Optional<TodoEntity> getTodoByUserIDAndId(String userID, String id);
 }
