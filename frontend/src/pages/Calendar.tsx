@@ -1,342 +1,318 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
-import axios from 'axios';
-import VisualCalendar from '../components/VisualCalendar.tsx';
 
-interface Event {
-  id: number;
+import React, { useState } from 'react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+type Event = {
+  id: string;
   title: string;
   description: string;
-  eventDate: string; // ISO string
+  date: Date;
+  type: 'assignment' | 'exam' | 'reminder' | 'other';
+};
+
+interface CalendarDayProps {
+  day: Date;
+  displayMonth?: Date;
+  isSelected: boolean;
+  isToday: boolean;
+  onClick?: () => void;
+  events: Event[];
 }
 
-// Define the light theme (white & purple)
-const lightTheme = {
-  pageWrapper: {
-    backgroundColor: '#ffffff',
-    color: '#333333',
-  },
-  headerBar: {
-    marginBottom: '2rem',
-  },
-  pageTitle: {
-    fontSize: '2rem',
-    fontWeight: 600,
-    margin: 0,
-    color: '#333333',
-  },
-  subtitle: {
-    fontSize: '1rem',
-    color: '#666666',
-    marginTop: '0.5rem',
-    lineHeight: 1.4,
-  },
-  topActions: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: '0.5rem',
-    marginTop: '1.5rem',
-  },
-  actionButton: {
-    backgroundColor: 'transparent',
-    color: '#333333',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    padding: '0.5rem 1rem',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-  },
-  primaryButton: {
-    backgroundColor: 'purple',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '0.5rem 1rem',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-  },
-  sectionHeading: {
-    fontSize: '1.25rem',
-    margin: '1.5rem 0 1rem',
-    fontWeight: 500,
-    color: '#333333',
-  },
-  formWrapper: {
-    backgroundColor: '#f7f7f7',
-    padding: '1rem',
-    borderRadius: '8px',
-    marginBottom: '2rem',
-  },
-  formRow: {
-    display: 'flex',
-    flexWrap: 'wrap' as 'wrap',
-    gap: '1rem',
-    marginBottom: '1rem',
-  },
-  input: {
-    flex: '1 1 220px',
-    padding: '0.5rem',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: '#ffffff',
-    color: '#333333',
-  },
-  eventList: {
-    listStyle: 'none',
-    padding: 0,
-  },
-  eventItem: {
-    backgroundColor: '#f7f7f7',
-    marginBottom: '1rem',
-    padding: '1rem',
-    borderRadius: '8px',
-  },
-  eventTitle: {
-    fontSize: '1rem',
-    fontWeight: 600,
-    marginBottom: '0.3rem',
-    color: '#333333',
-  },
-  eventDescription: {
-    fontSize: '0.9rem',
-    marginBottom: '0.3rem',
-    color: '#666666',
-  },
-  eventDate: {
-    fontSize: '0.8rem',
-    color: '#999999',
-  },
-};
-
-// Define the dark theme (black & purple)
-const darkTheme = {
-  pageWrapper: {
-    backgroundColor: '#1f1f1f',
-    color: '#e0e0e0',
-  },
-  headerBar: {
-    marginBottom: '2rem',
-  },
-  pageTitle: {
-    fontSize: '2rem',
-    fontWeight: 600,
-    margin: 0,
-    color: '#e0e0e0',
-  },
-  subtitle: {
-    fontSize: '1rem',
-    color: '#9e9e9e',
-    marginTop: '0.5rem',
-    lineHeight: 1.4,
-  },
-  topActions: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: '0.5rem',
-    marginTop: '1.5rem',
-  },
-  actionButton: {
-    backgroundColor: 'transparent',
-    color: '#e0e0e0',
-    border: '1px solid #3c3c3c',
-    borderRadius: '4px',
-    padding: '0.5rem 1rem',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-  },
-  primaryButton: {
-    backgroundColor: '#3c3c3c',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '0.5rem 1rem',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-  },
-  sectionHeading: {
-    fontSize: '1.25rem',
-    margin: '1.5rem 0 1rem',
-    fontWeight: 500,
-    color: '#e0e0e0',
-  },
-  formWrapper: {
-    backgroundColor: '#2c2c2c',
-    padding: '1rem',
-    borderRadius: '8px',
-    marginBottom: '2rem',
-  },
-  formRow: {
-    display: 'flex',
-    flexWrap: 'wrap' as 'wrap',
-    gap: '1rem',
-    marginBottom: '1rem',
-  },
-  input: {
-    flex: '1 1 220px',
-    padding: '0.5rem',
-    border: '1px solid #3c3c3c',
-    borderRadius: '4px',
-    backgroundColor: '#1f1f1f',
-    color: '#e0e0e0',
-  },
-  eventList: {
-    listStyle: 'none',
-    padding: 0,
-  },
-  eventItem: {
-    backgroundColor: '#2c2c2c',
-    marginBottom: '1rem',
-    padding: '1rem',
-    borderRadius: '8px',
-  },
-  eventTitle: {
-    fontSize: '1rem',
-    fontWeight: 600,
-    marginBottom: '0.3rem',
-    color: '#e0e0e0',
-  },
-  eventDescription: {
-    fontSize: '0.9rem',
-    marginBottom: '0.3rem',
-    color: '#ccc',
-  },
-  eventDate: {
-    fontSize: '0.8rem',
-    color: '#888',
-  },
-};
-
-const CalendarPage: React.FC = () => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [newEvent, setNewEvent] = useState({
+const CalendarPage = () => {
+  const [date, setDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState<Omit<Event, 'id'>>({
     title: '',
     description: '',
-    eventDate: '',
+    date: new Date(),
+    type: 'reminder',
   });
-  const [showNewEventForm, setShowNewEventForm] = useState<boolean>(false);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
-  // Fetch events when component mounts.
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  // Create sample events with current year dates to avoid invalid dates
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+  
+  // Sample events (in real app, these would come from a database or API)
+  const [events, setEvents] = useState<Event[]>([
+    {
+      id: '1',
+      title: 'Complete Math Assignment',
+      description: 'Finish the calculus problems from chapter 5',
+      date: new Date(currentYear, currentMonth, 15),
+      type: 'assignment',
+    },
+    {
+      id: '2',
+      title: 'Physics Exam',
+      description: 'Midterm exam covering chapters 1-4',
+      date: new Date(currentYear, currentMonth, 20),
+      type: 'exam',
+    },
+    {
+      id: '3',
+      title: 'Group Project Meeting',
+      description: 'Meet with team to discuss project timeline',
+      date: new Date(currentYear, currentMonth, 18),
+      type: 'reminder',
+    },
+  ]);
 
-  const fetchEvents = async () => {
-    try {
-      const response = await axios.get<Event[]>('http://localhost:8080/api/events');
-      setEvents(response.data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
+  // Create a mapping of events by date for easy lookup
+  const eventsByDate: Record<string, Event[]> = {};
+  events.forEach(event => {
+    const dateKey = format(event.date, 'yyyy-MM-dd');
+    if (!eventsByDate[dateKey]) {
+      eventsByDate[dateKey] = [];
     }
-  };
+    eventsByDate[dateKey].push(event);
+  });
 
-  // Handle input changes
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewEvent((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddEvent = async () => {
-    try {
-      await axios.post('http://localhost:8080/api/events', newEvent);
-      setNewEvent({ title: '', description: '', eventDate: '' });
-      setShowNewEventForm(false);
-      fetchEvents();
-    } catch (error) {
-      console.error('Error adding event:', error);
+  // Custom day renderer for the calendar
+  const CalendarDay = ({ day, displayMonth, isSelected, isToday, onClick }: CalendarDayProps) => {
+    if (!day || !(day instanceof Date) || isNaN(day.getTime())) {
+      return null; // Skip rendering if day is invalid
     }
+    
+    // Get events for this day
+    const dayKey = format(day, 'yyyy-MM-dd');
+    const dayEvents = eventsByDate[dayKey] || [];
+    const hasEvents = dayEvents.length > 0;
+    
+    return (
+      <div
+        onClick={onClick}
+        className={cn(
+          "relative flex h-9 w-9 items-center justify-center p-0 font-normal aria-selected:opacity-100",
+          isToday && "bg-accent text-accent-foreground font-semibold",
+          isSelected && "bg-primary text-primary-foreground",
+          hasEvents && !isSelected && !isToday && "bg-secondary/50",
+          hasEvents && "font-semibold"
+        )}
+      >
+        {day.getDate()}
+        {hasEvents && (
+          <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">
+            {dayEvents.slice(0, 3).map((event, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "h-1 w-1 rounded-full",
+                  event.type === 'assignment' && "bg-red-500",
+                  event.type === 'exam' && "bg-yellow-500",
+                  event.type === 'reminder' && "bg-blue-500",
+                  event.type === 'other' && "bg-green-500",
+                )}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
+  // Get events for the selected date
+  const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
+  const selectedDateEvents = eventsByDate[selectedDateKey] || [];
+
+  const handleAddEvent = () => {
+    const event: Event = {
+      ...newEvent,
+      id: crypto.randomUUID(),
+      date: selectedDate,
+    };
+    
+    setEvents([...events, event]);
+    setNewEvent({ title: '', description: '', date: new Date(), type: 'reminder' });
+    setIsAddEventOpen(false);
   };
 
-  // Determine current theme
-  const theme = isDarkMode ? darkTheme : lightTheme;
+  const handleDeleteEvent = (eventId: string) => {
+    setEvents(events.filter(event => event.id !== eventId));
+  };
 
   return (
-    <div style={{ ...theme.pageWrapper, width: '100vw', minHeight: '100vh', padding: '2rem' }}>
-      {/* Theme toggle button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button style={theme.primaryButton} onClick={toggleTheme}>
-          Switch to {isDarkMode ? 'Light' : 'Dark'} Mode
-        </button>
-      </div>
-
-      {/* Top Section: Title, Subtitle, and Actions */}
-      <div style={theme.headerBar}>
-        <h1 style={theme.pageTitle}>Course Schedule</h1>
-        <p style={theme.subtitle}>
-          This course schedule provides a thorough list of weekly topics, readings,
-          assignments, and exams. You can create your own categories and topics for
-          whatever you’re teaching. More on that here.
-        </p>
-        <div style={theme.topActions}>
-          <button
-            style={theme.primaryButton}
-            onClick={() => setShowNewEventForm(!showNewEventForm)}
-          >
-            New
-          </button>
+    <div className="page-container">
+      <div className="flex flex-col gap-8 md:flex-row">
+        <div className="md:w-1/2 lg:w-2/3">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-primary/5 dark:bg-primary/10">
+              <div className="flex items-center justify-between">
+                <CardTitle>Calendar</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" size="icon" onClick={() => setDate(new Date())}>
+                    Today
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setDate(new Date(date.getFullYear(), date.getMonth() - 1, 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setDate(new Date(date.getFullYear(), date.getMonth() + 1, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <CardDescription>
+                {format(date, 'MMMM yyyy')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Calendar
+                mode="single"
+                month={date}
+                onMonthChange={setDate}
+                selected={selectedDate}
+                onSelect={(day) => day && setSelectedDate(day)}
+                className="rounded-md border mx-auto"
+                components={{
+                  Day: CalendarDay as any
+                }}
+              />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <div className="flex items-center">
+                  <div className="mr-1 h-3 w-3 rounded-full bg-red-500" />
+                  <span className="text-xs">Assignment</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="mr-1 h-3 w-3 rounded-full bg-yellow-500" />
+                  <span className="text-xs">Exam</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="mr-1 h-3 w-3 rounded-full bg-blue-500" />
+                  <span className="text-xs">Reminder</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="mr-1 h-3 w-3 rounded-full bg-green-500" />
+                  <span className="text-xs">Other</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="md:w-1/2 lg:w-1/3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Events</CardTitle>
+                <CardDescription>
+                  {format(selectedDate, 'MMMM d, yyyy')}
+                </CardDescription>
+              </div>
+              <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="mr-1 h-4 w-4" /> Add Event
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Event</DialogTitle>
+                    <DialogDescription>
+                      Create a new event for {format(selectedDate, 'MMMM d, yyyy')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="title">Title</Label>
+                      <Input
+                        id="title"
+                        value={newEvent.title}
+                        onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                        placeholder="Event title"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={newEvent.description}
+                        onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                        placeholder="Event description"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="type">Event Type</Label>
+                      <select
+                        id="type"
+                        value={newEvent.type}
+                        onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      >
+                        <option value="assignment">Assignment</option>
+                        <option value="exam">Exam</option>
+                        <option value="reminder">Reminder</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button type="submit" onClick={handleAddEvent}>Save Event</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            
+            <CardContent>
+              {selectedDateEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CalendarIcon className="mb-2 h-10 w-10 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No events for this day</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click "Add Event" to create one</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedDateEvents.map((event) => (
+                    <div key={event.id} className="flex items-start justify-between rounded-lg border p-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{event.title}</h4>
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              event.type === 'assignment' && "bg-red-500/10 text-red-500 border-red-500/20",
+                              event.type === 'exam' && "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+                              event.type === 'reminder' && "bg-blue-500/10 text-blue-500 border-blue-500/20",
+                              event.type === 'other' && "bg-green-500/10 text-green-500 border-green-500/20",
+                            )}
+                          >
+                            {event.type}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {event.description}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteEvent(event.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* "Add Event" Form */}
-      {showNewEventForm && (
-        <div style={theme.formWrapper}>
-          <h2 style={theme.sectionHeading}>Add Event</h2>
-          <div style={theme.formRow}>
-            <input
-              type="text"
-              name="title"
-              value={newEvent.title}
-              onChange={handleInputChange}
-              placeholder="Event Title"
-              style={theme.input}
-            />
-            <input
-              type="text"
-              name="description"
-              value={newEvent.description}
-              onChange={handleInputChange}
-              placeholder="Event Description"
-              style={theme.input}
-            />
-            <input
-              type="datetime-local"
-              name="eventDate"
-              value={newEvent.eventDate}
-              onChange={handleInputChange}
-              style={theme.input}
-            />
-          </div>
-          <button style={theme.primaryButton} onClick={handleAddEvent}>
-            Add Event
-          </button>
-        </div>
-      )}
-
-      {/* Events List */}
-      <h2 style={theme.sectionHeading}>Events</h2>
-      {events.length === 0 ? (
-        <p style={{ color: isDarkMode ? '#888' : '#666' }}>No events found.</p>
-      ) : (
-        <ul style={theme.eventList}>
-          {events.map((event) => (
-            <li key={event.id} style={theme.eventItem}>
-              <h3 style={theme.eventTitle}>{event.title}</h3>
-              <p style={theme.eventDescription}>{event.description}</p>
-              <p style={theme.eventDate}>
-                {new Date(event.eventDate).toLocaleString()}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Visual Calendar */}
-      <VisualCalendar events={events} isDarkMode={isDarkMode} theme={theme} />
     </div>
   );
 };
