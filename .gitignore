@@ -48,3 +48,5 @@ target/
 
 # Ignore compiled files
 compiled/
+
+node_modules/
