@@ -8,7 +8,7 @@ import java.util.List;
 public interface TodoRepository extends MongoRepository<TodoEntity, String> {
     
     // Get a list of all the todos corresponding to the specified sectionID
-    Optional<List<TodoEntity>> getTodosBySectionID(String userID, String sectionID);
+    Optional<List<TodoEntity>> getTodosByUserIDAndSectionID(String userID, String sectionID);
 
     // Get a list of all the todos corresponding to the specified userID
     Optional<List<TodoEntity>> getTodosByUserID(String userID);

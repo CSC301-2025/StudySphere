@@ -4,8 +4,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -34,10 +36,46 @@ public class TodoController {
 
     // Get all todos
     @GetMapping
-    public List<TodoEntity> getAllTodos(HttpServletRequest request) {
+    public List<TodoEntity> getAllTodos(
+        HttpServletRequest request,
+        @RequestParam(required = false) String sectionID,
+        @RequestParam(required = false) String startDate,
+        @RequestParam(required = false) String endDate) {
+
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
-        return todoService.getAllTodos(userID);
+
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+
+        // Parse startDate if provided
+        if (startDate != null) {
+            try {
+                start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            } catch (DateTimeParseException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid startDate format. Expected: yyyy-MM-dd'T'HH:mm:ss");
+            }
+        }
+
+        // Parse endDate if provided
+        if (endDate != null) {
+            try {
+                end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            } catch (DateTimeParseException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid endDate format. Expected: yyyy-MM-dd'T'HH:mm:ss");
+            }
+        }
+
+        // Get all todos by section if specified
+        if (sectionID != null) {
+            return todoService.getTodosBySectionID(userID, sectionID, start, end);
+        }
+
+        // Otherwise get all todos for the user
+        else {
+            return todoService.getAllTodos(userID, start, end);
+        }
+
     }
 
     // Get todo by id
@@ -54,14 +92,6 @@ public class TodoController {
         }
 
         return new ResponseEntity<>(todo, HttpStatus.OK);
-    }
-
-    // Get all todos by section id
-    @GetMapping("/section/{id}")
-    public List<TodoEntity> getTodosBySection(HttpServletRequest request, @PathVariable String id) {
-        String token = JWTAuthenticationFilter.getJWTFromRequest(request);
-        String userID = jwt.getUserIdFromJWT(token);
-        return todoService.getTodosBySectionID(userID, id);
     }
 
     // Create a new todo
