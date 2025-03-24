@@ -5,10 +5,12 @@ import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import com.app.Dto.TodoDto;
-
+import com.app.Section.SectionEntity;
 import com.app.security.JWTGenerator;
 import com.app.security.JWTAuthenticationFilter;
 
@@ -69,6 +71,11 @@ public class TodoController {
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
 
+        // Error check description
+        if (todoDto.getDescription() == null || todoDto.getDueDate() == null || todoDto.getSectionID() == null) {
+            return new ResponseEntity<>("Todo missing required parameters", HttpStatus.BAD_REQUEST);
+        }
+
         // Save todo entity to database
         TodoEntity todo = todoService.savetodo(userID, todoDto);
 
@@ -83,10 +90,23 @@ public class TodoController {
 
     // Delete a task (if it exists)
     @DeleteMapping("/{id}")
-    public void deleteTodo(HttpServletRequest request, @PathVariable String id) {
+    public ResponseEntity<String> deleteTodo(HttpServletRequest request, @PathVariable String id) {
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
-        todoService.deletetodo(userID, id);
+
+        // Retrieve todo
+        TodoEntity todo = todoService.getTodoById(userID, id);
+
+        if (todo == null) {
+            return new ResponseEntity<>("Could not find requested todo", HttpStatus.NOT_FOUND);
+        }
+        else {
+            todoService.deletetodo(userID, id);
+            return new ResponseEntity<>("Successfully deleted todo", HttpStatus.OK);
+        }
+
+        
     }
 
 }
+
