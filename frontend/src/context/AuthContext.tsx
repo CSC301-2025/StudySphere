@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, LoginCredentials, RegisterData } from "@/types/auth";
+import { User, LoginCredentials, RegisterData, AuthResponse } from "@/types/auth";
 import { authService } from "@/services/authService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,12 +52,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     try {
-      const response = await authService.login(credentials);
-      setUser(response.user);
+      const response: AuthResponse = await authService.login(credentials);
+      setUser(response.userDto);
       toast({
-        title: "Login successful",
-        description: `Welcome back, ${response.user.firstName}!`,
+        title: response.message,
+        description: `Welcome back, ${response.userDto.firstName}!`,
       });
+      // Optionally, store tokens if needed:
+      // authService.storeTokens(response.data.accessToken, response.data.refreshToken);
     } catch (error) {
       toast({
         title: "Login failed",
@@ -69,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+  
 
   const register = async (data: RegisterData) => {
     setIsLoading(true);

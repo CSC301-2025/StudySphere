@@ -31,7 +31,8 @@ export interface RegisterData {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: User;
+  userDto: User;
+  message: string;
 }
 
 export interface TokenData {

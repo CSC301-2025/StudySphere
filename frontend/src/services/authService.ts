@@ -2,7 +2,7 @@
 import { LoginCredentials, RegisterData, AuthResponse, TokenData, User } from "@/types/auth";
 
 // Base API URL - should be updated based on your backend configuration
-const API_BASE_URL = "https://your-api-url.com/api/auth"; // Update this with your actual API URL
+const API_BASE_URL = "http://localhost:8080/api/auth"; // Update this with your actual API URL
 
 // Helper function for making API requests
 async function fetchApi<T>(
@@ -19,7 +19,6 @@ async function fetchApi<T>(
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
     headers,
