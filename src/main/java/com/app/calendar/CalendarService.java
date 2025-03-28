@@ -59,7 +59,8 @@ public class CalendarService {
 
     public List<CalendarEvent> syncTodosToCalendar(String userID) {
         // Fetch all ToDo events for this user.
-        List<TodoEntity> todos = todoService.getAllTodos(userID);
+        List<TodoEntity> todos = todoService.       
+        getAllTodos(userID, LocalDateTime.MIN ,LocalDateTime.MAX);
         List<CalendarEvent> createdEvents = new ArrayList<>();
         
         if (todos != null) {
