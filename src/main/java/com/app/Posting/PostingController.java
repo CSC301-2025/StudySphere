@@ -1,5 +1,6 @@
 package com.app.Posting;
 
+import com.Application;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,12 +11,23 @@ import java.util.List;
 @RequestMapping("/api/posting")
 public class PostingController {
 
+    private final Application application;
+
     @Autowired
     private PostingService postingService;
 
+    PostingController(Application application) {
+        this.application = application;
+    }
+
     @GetMapping
     public ResponseEntity<List<PostingEntity>> getAllPosting( 
-        @RequestParam(required = false) String title){
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) String course,
+        @RequestParam(required = false) String location,
+        @RequestParam(required = false) Double minPrice,
+        @RequestParam(required = false) Double maxPrice) {
+            
         List<PostingEntity> posting = postingService.getAllPosting();
         return new ResponseEntity<>(posting, HttpStatus.OK);
     }

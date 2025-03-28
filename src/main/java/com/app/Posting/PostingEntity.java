@@ -9,7 +9,7 @@ public class PostingEntity {
     private String id;
     private String tutorId;
     private String title;
-    private String coursesTaught;
+    private String[] coursesTaught;
     private String description;
     private String location; // online or in person
     private double pricePerHour;
@@ -19,7 +19,7 @@ public class PostingEntity {
     public PostingEntity() {}
 
     // Constructor with required fields (contactEmail is set later)
-    public PostingEntity(String tutorId, String title, String coursesTaught, String description, String location, double pricePerHour) {
+    public PostingEntity(String tutorId, String title, String[] coursesTaught, String description, String location, double pricePerHour) {
         this.tutorId = tutorId;
         this.title = title;
         this.coursesTaught = coursesTaught;
@@ -53,11 +53,11 @@ public class PostingEntity {
         this.title = title;
     }
 
-    public String getCoursesTaught() {
+    public String[] getCoursesTaught() {
         return coursesTaught;
     }
     
-    public void setCoursesTaught(String coursesTaught) {
+    public void setCoursesTaught(String[] coursesTaught) {
         this.coursesTaught = coursesTaught;
     }
 
