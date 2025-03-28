@@ -50,3 +50,6 @@ target/
 compiled/
 
 node_modules/
+
+# Ignore secret key
+src/main/java/com/app/security/SecurityConstants.java
