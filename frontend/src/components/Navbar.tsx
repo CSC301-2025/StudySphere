@@ -35,19 +35,9 @@ const Navbar = () => {
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('darkMode', 'true');
-      toast({
-        title: "Dark mode enabled",
-        description: "Your eyes will thank you later!",
-        duration: 2000,
-      });
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('darkMode', 'false');
-      toast({
-        title: "Light mode enabled",
-        description: "Bright and vibrant!",
-        duration: 2000,
-      });
     }
   };
   
