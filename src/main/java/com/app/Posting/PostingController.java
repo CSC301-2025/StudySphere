@@ -59,11 +59,11 @@ public class PostingController {
         }
 
         // Verify if maxPrice is passed, it is not negative, and that it is greater than min price (if applicable)
-        if ((maxPrice != null && maxPrice < 0) || (minPrice != null && maxPrice < minPrice)) {
+        if (maxPrice != null && ((maxPrice < 0) || (minPrice != null && maxPrice < minPrice))) {
             return new ResponseEntity<>("Max Price must not be negative and be greater than Min Price", HttpStatus.BAD_REQUEST);
         }
         
-        List<PostingEntity> posting = postingService.getAllPosting();
+        List<PostingEntity> posting = postingService.getAllPosting(title, course, location, minPrice, maxPrice);
         return new ResponseEntity<>(posting, HttpStatus.OK);
     }
 
@@ -86,8 +86,6 @@ public class PostingController {
 
             // Set tutor id from jwt
             posting.setTutorId(userID);
-
-            PostingEntity createdPosting = postingService.createPosting(posting);
             
             // Verify location is either "Online" or "In-Person"
             if (!(posting.getLocation().equals("Online") || posting.getLocation().equals("In-Person"))) {
@@ -98,6 +96,8 @@ public class PostingController {
             if (!(posting.getPricePerHour() > 0)) {
                 return new ResponseEntity<>("Price per hour must be positive", HttpStatus.BAD_REQUEST);
             }
+
+            PostingEntity createdPosting = postingService.createPosting(posting);
 
             return new ResponseEntity<>(createdPosting, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {

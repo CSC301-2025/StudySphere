@@ -8,6 +8,7 @@ import com.app.Tutor.TutorEntity;
 import com.app.Tutor.TutorService;
 import com.app.User.UserEntity;
 import com.app.User.UserService;
+import java.util.Arrays;
 
 @Service
 public class PostingService {
@@ -21,8 +22,19 @@ public class PostingService {
     @Autowired
     private UserService userService;
 
-    public List<PostingEntity> getAllPosting() {
-        return postingRepository.findAll();
+    public List<PostingEntity> getAllPosting(String title, String course, String location, Double minPrice, Double maxPrice) {
+        List<PostingEntity> postings = postingRepository.findAll();
+
+        // Filter postings based on the provided criteria
+        return postings.stream()
+            .filter(posting -> (title == null || posting.getTitle().toLowerCase().contains(title.toLowerCase())) &&
+                              (course == null || posting.getCoursesTaught() != null && 
+                              Arrays.stream(posting.getCoursesTaught())
+                              .anyMatch(c -> c.equalsIgnoreCase(course))) &&
+                              (location == null || posting.getLocation().equalsIgnoreCase(location)) &&
+                              (minPrice == null || posting.getPricePerHour() >= minPrice) &&
+                              (maxPrice == null || posting.getPricePerHour() <= maxPrice))
+            .toList();
     }
 
     public PostingEntity getPostingById(String id) {
