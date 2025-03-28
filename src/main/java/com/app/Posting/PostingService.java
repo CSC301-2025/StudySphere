@@ -47,7 +47,6 @@ public class PostingService {
             PostingEntity existingPosting = optionalPosting.get();
             existingPosting.setTutorId(posting.getTutorId());
             existingPosting.setTitle(posting.getTitle());
-            existingPosting.setAvailability(posting.getAvailability());
             existingPosting.setCoursesTaught(posting.getCoursesTaught());
             existingPosting.setDescription(posting.getDescription());
             existingPosting.setLocation(posting.getLocation());

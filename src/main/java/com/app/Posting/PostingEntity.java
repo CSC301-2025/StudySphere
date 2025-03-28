@@ -9,7 +9,6 @@ public class PostingEntity {
     private String id;
     private String tutorId;
     private String title;
-    private String availability;
     private String coursesTaught;
     private String description;
     private String location; // online or in person
@@ -20,10 +19,9 @@ public class PostingEntity {
     public PostingEntity() {}
 
     // Constructor with required fields (contactEmail is set later)
-    public PostingEntity(String tutorId, String title, String availability, String coursesTaught, String description, String location, double pricePerHour) {
+    public PostingEntity(String tutorId, String title, String coursesTaught, String description, String location, double pricePerHour) {
         this.tutorId = tutorId;
         this.title = title;
-        this.availability = availability;
         this.coursesTaught = coursesTaught;
         this.description = description;
         this.location = location;
@@ -53,14 +51,6 @@ public class PostingEntity {
     
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getAvailability() {
-        return availability;
-    }
-    
-    public void setAvailability(String availability) {
-        this.availability = availability;
     }
 
     public String getCoursesTaught() {

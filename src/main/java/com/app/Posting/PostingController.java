@@ -14,7 +14,8 @@ public class PostingController {
     private PostingService postingService;
 
     @GetMapping
-    public ResponseEntity<List<PostingEntity>> getAllPosting() {
+    public ResponseEntity<List<PostingEntity>> getAllPosting( 
+        @RequestParam(required = false) String title){
         List<PostingEntity> posting = postingService.getAllPosting();
         return new ResponseEntity<>(posting, HttpStatus.OK);
     }
