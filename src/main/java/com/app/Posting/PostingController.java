@@ -1,6 +1,11 @@
 package com.app.Posting;
 
 import com.Application;
+import com.app.security.JWTAuthenticationFilter;
+import com.app.security.JWTGenerator;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +18,10 @@ import java.util.List;
 public class PostingController {
 
     private final Application application;
+
+    // JWT Generator
+    @Autowired
+    JWTGenerator jwt;
 
     @Autowired
     private PostingService postingService;
@@ -69,8 +78,15 @@ public class PostingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPosting(@RequestBody PostingEntity posting) {
+    public ResponseEntity<?> createPosting(HttpServletRequest request, @RequestBody PostingEntity posting) {
         try {
+
+            String token = JWTAuthenticationFilter.getJWTFromRequest(request);
+            String userID = jwt.getUserIdFromJWT(token);
+
+            // Set tutor id from jwt
+            posting.setTutorId(userID);
+
             PostingEntity createdPosting = postingService.createPosting(posting);
             
             // Verify location is either "Online" or "In-Person"
