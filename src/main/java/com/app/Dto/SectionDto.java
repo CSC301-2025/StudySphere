@@ -4,13 +4,18 @@ import lombok.Data;
 
 @Data
 public class SectionDto {
-
-    private String section_id;
-    private String section_name;
-    private String section_colour; // TODO: should not be a string?
+    private String sectionID;
+    private String sectionName;
+    private String sectionColour; // TODO: should not be a string?
     // TODO: should there be a section description?
 
     public SectionDto() {
     }
 
+    public SectionDto(String sectionID, String sectionName, String sectionColour) {
+        this.sectionID = sectionID;
+        this.sectionName = sectionName;
+        this.sectionColour = sectionColour;
+    }
+    
 }

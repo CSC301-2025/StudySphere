@@ -4,6 +4,7 @@ import com.app.Dto.*;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SectionService {
@@ -14,35 +15,43 @@ public class SectionService {
         this.sectionRepository = sectionRepository;
     }
 
-    public List<SectionEntity> getAllSections(String userID) {
-        return sectionRepository.getSectionsByUserID(userID).orElse(null);
+    public List<SectionDto> getAllSections(String userID) {
+        return sectionRepository.getSectionsByUserID(userID)
+            .map(sectionEntities -> sectionEntities.stream()
+                .map(this::toDTO) // assumes you have a toDTO(SectionEntity) method
+                .collect(Collectors.toList()))
+            .orElse(Collections.emptyList());
     }
 
-    public SectionEntity getSectionById(String userID, String id) {
-        return sectionRepository.findByUserIDAndSectionId(userID, id).orElse(null);
+
+    public SectionDto getSectionById(String userID, String id) {
+        return sectionRepository.findByUserIDAndSectionId(userID, id)
+            .map(this::toDTO)
+            .orElse(null);
     }
 
-    public SectionEntity addSection(String userID, SectionDto sectionDto) {
-        return sectionRepository.save(toEntity(userID, sectionDto));
+    public SectionDto addSection(String userID, SectionDto sectionDto) {
+        SectionEntity savedEntity = sectionRepository.save(toEntity(userID, sectionDto));
+        return toDTO(savedEntity);
     }
 
-    public SectionEntity updateSection(String userID, SectionDto sectionDto) {
-        Optional<SectionEntity> optional_Entity = sectionRepository.findByUserIDAndSectionId(userID, sectionDto.getSection_id());
+    public SectionDto updateSection(String userID, SectionDto sectionDto) {
+        Optional<SectionEntity> optional_Entity = sectionRepository.findByUserIDAndSectionId(userID, sectionDto.getSectionID());
 
         if (optional_Entity.isPresent()) {
             SectionEntity sectionEntity = optional_Entity.get();
             
-            if (sectionDto.getSection_name() != null) {
-                sectionEntity.setSection_name(sectionDto.getSection_name());
+            if (sectionDto.getSectionName() != null) {
+                sectionEntity.setSectionName(sectionDto.getSectionName());
             }
             
-            if (sectionDto.getSection_colour() != null) {
-                sectionEntity.setSection_colour(sectionDto.getSection_colour());
+            if (sectionDto.getSectionColour() != null) {
+                sectionEntity.setSectionColour(sectionDto.getSectionColour());
             }
             
-            return sectionRepository.save(sectionEntity);
+            return toDTO(sectionRepository.save(sectionEntity));
         } else {
-            return new SectionEntity();
+            return new SectionDto();
         }
     }
 
@@ -56,13 +65,21 @@ public class SectionService {
 
     private SectionEntity toEntity(String userID, SectionDto sectionDto) {
         SectionEntity sectionEntity = new SectionEntity(
-            sectionDto.getSection_id(),
+            sectionDto.getSectionID(),
             userID,
-            sectionDto.getSection_name(),
-            sectionDto.getSection_colour()
+            sectionDto.getSectionName(),
+            sectionDto.getSectionColour()
         );
 
         return sectionEntity;
+    }
+
+    private SectionDto toDTO(SectionEntity sectionEntity) {
+        return new SectionDto(
+            sectionEntity.getSectionId(),
+            sectionEntity.getSectionName(),
+            sectionEntity.getSectionColour()
+        );
     }
 
 }

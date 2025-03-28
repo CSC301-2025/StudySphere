@@ -12,38 +12,38 @@ public class SectionEntity {
     @Id
     private String sectionId;
     private String userID;
-    private String section_name;
-    private String section_colour;
+    private String sectionName;
+    private String sectionColour;
 
-    public String getSection_id() {
+    public String getSectionId() {
         return sectionId;
     }
 
-    public void setSection_id(String sectionId) {
+    public void setSectionId(String sectionId) {
         this.sectionId = sectionId;
     }
 
-    public String getSection_name() {
-        return section_name;
+    public String getSectionName() {
+        return sectionName;
     }
 
-    public void setSection_name(String section_name) {
-        this.section_name = section_name;
+    public void setSectionName(String section_name) {
+        this.sectionName = section_name;
     }
 
-    public String getSection_colour() {
-        return section_colour;
+    public String getSectionColour() {
+        return sectionColour;
     }
 
-    public void setSection_colour(String section_colour) {
-        this.section_colour = section_colour;
+    public void setSectionColour(String section_colour) {
+        this.sectionColour = section_colour;
     }
 
     // constructor
     public SectionEntity(String sectionId, String userID, String section_name, String section_colour) {
         this.sectionId = sectionId;
         this.userID = userID;
-        this.section_name = section_name;
-        this.section_colour = section_colour;
+        this.sectionName = section_name;
+        this.sectionColour = section_colour;
     }
 }

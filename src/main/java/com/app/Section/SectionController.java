@@ -29,7 +29,7 @@ public class SectionController {
 
     // get request to get all sections for that user
     @GetMapping
-    public List<SectionEntity> getAllSections(HttpServletRequest request) {
+    public List<SectionDto> getAllSections(HttpServletRequest request) {
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         return sectionService.getAllSections(userID);
@@ -37,7 +37,7 @@ public class SectionController {
 
     // get request to get a section by id
     @GetMapping("/{id}")
-    public SectionEntity getSectionById(HttpServletRequest request, @PathVariable String id) {
+    public SectionDto getSectionById(HttpServletRequest request, @PathVariable String id) {
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         return sectionService.getSectionById(userID, id);
@@ -45,7 +45,7 @@ public class SectionController {
 
     // post request to add a section
     @PostMapping
-    public ResponseEntity<SectionEntity> addSection(HttpServletRequest request, @RequestBody SectionDto sectionDto) {
+    public ResponseEntity<SectionDto> addSection(HttpServletRequest request, @RequestBody SectionDto sectionDto) {
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         return new ResponseEntity<>(sectionService.addSection(userID, sectionDto), HttpStatus.CREATED);
@@ -53,7 +53,7 @@ public class SectionController {
 
     // put request to update a section
     @PatchMapping
-    public ResponseEntity<SectionEntity> updateSection(HttpServletRequest request, @RequestBody SectionDto sectionDto) {
+    public ResponseEntity<SectionDto> updateSection(HttpServletRequest request, @RequestBody SectionDto sectionDto) {
         String token = JWTAuthenticationFilter.getJWTFromRequest(request);
         String userID = jwt.getUserIdFromJWT(token);
         return new ResponseEntity<>(sectionService.updateSection(userID, sectionDto), HttpStatus.OK);
