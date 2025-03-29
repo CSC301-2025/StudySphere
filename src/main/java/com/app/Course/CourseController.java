@@ -1,5 +1,6 @@
-package com.app.Posting;
+package com.app.Course;
 
+import com.Application;
 import com.app.security.JWTAuthenticationFilter;
 import com.app.security.JWTGenerator;
 
@@ -13,18 +14,22 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/api/posting")
-public class PostingController {
+@RequestMapping("/api/course")
+public class CourseController {
 
     // JWT Generator
     @Autowired
     JWTGenerator jwt;
 
     @Autowired
-    private PostingService postingService;
+    private CourseService courseService;
+
+    CourseController(Application application) {
+        this.application = application;
+    }
 
     @GetMapping
-    public ResponseEntity<?> getAllPosting( 
+    public ResponseEntity<?> getAllCourse( 
         @RequestParam(required = false) String title,
         @RequestParam(required = false) String course,
         @RequestParam(required = false) String location,
@@ -56,43 +61,26 @@ public class PostingController {
             return new ResponseEntity<>("Max Price must not be negative and be greater than Min Price", HttpStatus.BAD_REQUEST);
         }
         
-        List<PostingEntity> posting = postingService.getAllPosting(title, course, location, minPrice, maxPrice);
-        return new ResponseEntity<>(posting, HttpStatus.OK);
+        List<CourseEntity> course = courseService.getAllCourse(title, course, location, minPrice, maxPrice);
+        return new ResponseEntity<>(course, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PostingEntity> getPostingById(@PathVariable String id) {
-        PostingEntity posting = postingService.getPostingById(id);
-        if (posting != null) {
-            return new ResponseEntity<>(posting, HttpStatus.OK);
+    public ResponseEntity<CourseEntity> getCourseById(@PathVariable String id) {
+        CourseEntity course = courseService.getCourseById(id);
+        if (course != null) {
+            return new ResponseEntity<>(course, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
     @PostMapping
-    public ResponseEntity<?> createPosting(HttpServletRequest request, @RequestBody PostingEntity posting) {
+    public ResponseEntity<?> createCourse(HttpServletRequest request, @RequestBody CourseEntity course) {
         try {
+            CourseEntity createdCourse = courseService.createCourse(course);
 
-            String token = JWTAuthenticationFilter.getJWTFromRequest(request);
-            String userID = jwt.getUserIdFromJWT(token);
-
-            // Set tutor id from jwt
-            posting.setTutorId(userID);
-            
-            // Verify location is either "Online" or "In-Person"
-            if (!(posting.getLocation().equals("Online") || posting.getLocation().equals("In-Person"))) {
-                return new ResponseEntity<>("Location must be either 'Online' or 'In-Person'", HttpStatus.BAD_REQUEST);
-            }
-
-            // Verify hourly rate is positive
-            if (!(posting.getPricePerHour() > 0)) {
-                return new ResponseEntity<>("Price per hour must be positive", HttpStatus.BAD_REQUEST);
-            }
-
-            PostingEntity createdPosting = postingService.createPosting(posting);
-
-            return new ResponseEntity<>(createdPosting, HttpStatus.CREATED);
+            return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             // Return BAD_REQUEST if Tutor doesn't exist.
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -100,18 +88,18 @@ public class PostingController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PostingEntity> updatePosting(@PathVariable String id, @RequestBody PostingEntity posting) {
+    public ResponseEntity<CourseEntity> updateCourse(@PathVariable String id, @RequestBody CourseEntity course) {
         try {
-            PostingEntity updatedPosting = postingService.updatePosting(id, posting);
-            return new ResponseEntity<>(updatedPosting, HttpStatus.OK);
+            CourseEntity updatedCourse = courseService.updateCourse(id, course);
+            return new ResponseEntity<>(updatedCourse, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePosting(@PathVariable String id) {
-        postingService.deletePosting(id);
+    public ResponseEntity<Void> deleteCourse(@PathVariable String id) {
+        courseService.deleteCourse(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

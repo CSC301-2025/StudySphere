@@ -19,22 +19,6 @@ type Note = {
   fileUrl?: string;
 };
 
-type Discussion = {
-  id: string;
-  title: string;
-  author: string;
-  date: string;
-  content: string;
-  replies: Reply[];
-};
-
-type Reply = {
-  id: string;
-  author: string;
-  date: string;
-  content: string;
-};
-
 type Grade = {
   id: string;
   title: string;
@@ -52,7 +36,6 @@ export type Course = {
   schedule: string;
   assignments: Assignment[];
   notes: Note[];
-  discussions: Discussion[];
   grades: Grade[];
 };
 
@@ -99,23 +82,6 @@ const mockCourses: Course[] = [
         fileUrl: "#"
       }
     ],
-    discussions: [
-      {
-        id: "d1",
-        title: "Confusion about recursion",
-        author: "Student Name",
-        date: "2023-09-10T14:25:00",
-        content: "I'm having trouble understanding the concept of recursion...",
-        replies: [
-          {
-            id: "r1",
-            author: "Dr. Alex Johnson",
-            date: "2023-09-10T16:40:00",
-            content: "Recursion is a function calling itself. Think of it like..."
-          }
-        ]
-      }
-    ],
     grades: [
       {
         id: "g1",
@@ -159,16 +125,6 @@ const mockCourses: Course[] = [
         fileUrl: "#"
       }
     ],
-    discussions: [
-      {
-        id: "d2",
-        title: "Big O notation question",
-        author: "Another Student",
-        date: "2023-09-12T11:05:00",
-        content: "Can someone explain the difference between O(n) and O(n log n)?",
-        replies: []
-      }
-    ],
     grades: [
       {
         id: "g3",
@@ -205,7 +161,6 @@ const mockCourses: Course[] = [
         fileUrl: "#"
       }
     ],
-    discussions: [],
     grades: [
       {
         id: "g4",
@@ -234,7 +189,6 @@ const mockCourses: Course[] = [
       }
     ],
     notes: [],
-    discussions: [],
     grades: []
   },
   {
@@ -246,7 +200,6 @@ const mockCourses: Course[] = [
     schedule: "Wed/Fri 3:30 PM - 5:00 PM",
     assignments: [],
     notes: [],
-    discussions: [],
     grades: []
   },
   {
@@ -258,7 +211,6 @@ const mockCourses: Course[] = [
     schedule: "Mon/Wed 1:00 PM - 2:30 PM",
     assignments: [],
     notes: [],
-    discussions: [],
     grades: []
   }
 ];
@@ -272,8 +224,6 @@ type CourseContextType = {
   updateAssignment: (assignment: Assignment) => void;
   toggleAssignmentStatus: (assignmentId: string) => void;
   addNote: (courseId: string, note: Omit<Note, "id" | "dateAdded">) => void;
-  addDiscussion: (courseId: string, discussion: Omit<Discussion, "id" | "date" | "replies">) => void;
-  addReply: (courseId: string, discussionId: string, reply: Omit<Reply, "id" | "date">) => void;
 };
 
 // Create context
@@ -366,56 +316,6 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  // Add a new discussion to a course
-  const addDiscussion = (courseId: string, discussion: Omit<Discussion, "id" | "date" | "replies">) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              discussions: [
-                ...course.discussions,
-                {
-                  ...discussion,
-                  id: `d${Date.now()}`,
-                  date: new Date().toISOString(),
-                  replies: []
-                }
-              ]
-            }
-          : course
-      )
-    );
-  };
-
-  // Add a reply to a discussion
-  const addReply = (courseId: string, discussionId: string, reply: Omit<Reply, "id" | "date">) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              discussions: course.discussions.map(discussion => 
-                discussion.id === discussionId
-                  ? {
-                      ...discussion,
-                      replies: [
-                        ...discussion.replies,
-                        {
-                          ...reply,
-                          id: `r${Date.now()}`,
-                          date: new Date().toISOString()
-                        }
-                      ]
-                    }
-                  : discussion
-              )
-            }
-          : course
-      )
-    );
-  };
-
   const value = {
     courses,
     assignments,
@@ -424,8 +324,6 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     updateAssignment,
     toggleAssignmentStatus,
     addNote,
-    addDiscussion,
-    addReply
   };
 
   return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>;

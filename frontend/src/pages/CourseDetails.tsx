@@ -7,7 +7,6 @@ import CourseHeader from "../components/CourseHeader";
 import CourseTab from "../components/CourseTab";
 import AssignmentList from "../components/AssignmentList";
 import NotesSection from "../components/NotesSection";
-import DiscussionsSection from "../components/DiscussionsSection";
 import GradeSection from "../components/GradeSection";
 
 // Define tabs
@@ -15,14 +14,13 @@ const tabs = [
   { id: "overview", label: "Overview" },
   { id: "assignments", label: "Assignments" },
   { id: "notes", label: "Lecture Notes" },
-  { id: "discussions", label: "Discussions" },
   { id: "grades", label: "Grades" },
 ];
 
 const CourseDetails = () => {
   const { courseId, tabId } = useParams<{ courseId: string; tabId: string }>();
   const navigate = useNavigate();
-  const { getCourse, toggleAssignmentStatus, addNote, addDiscussion, addReply } = useCourses();
+  const { getCourse, toggleAssignmentStatus, addNote,} = useCourses();
   
   const course = getCourse(courseId || "");
   
@@ -117,13 +115,6 @@ const CourseDetails = () => {
           <NotesSection 
             course={course} 
             addNote={(note) => addNote(course.id, note)} 
-          />
-        } />
-        <Route path="/discussions" element={
-          <DiscussionsSection 
-            course={course} 
-            addDiscussion={(discussion) => addDiscussion(course.id, discussion)}
-            addReply={(discussionId, reply) => addReply(course.id, discussionId, reply)}
           />
         } />
         <Route path="/grades" element={<GradeSection course={course} />} />

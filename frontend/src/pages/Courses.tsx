@@ -7,18 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useCourses } from '@/context/CourseContext';
 
 // Ensure all properties match what's expected in CourseContext
 interface SectionType {
   id: string;
   title: string;
-  description: string;
-  instructor: string;
-  type: string;
   color: string;
-  createdAt: string;
 }
 
 const Sections = () => {
@@ -27,9 +22,6 @@ const Sections = () => {
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [newSection, setNewSection] = useState<Omit<SectionType, 'id' | 'createdAt'>>({
     title: '',
-    description: '',
-    instructor: '',
-    type: 'course',
     color: '#6D28D9'
   });
   
@@ -44,7 +36,7 @@ const Sections = () => {
   const handleAddSection = () => {
     // Note: We need to implement this without using addCourse which doesn't exist
     // For now, we'll just close the dialog since we can't add a new course
-    setNewSection({ title: '', description: '', instructor: '', type: 'course', color: '#6D28D9' });
+    setNewSection({ title: '', color: '#6D28D9' });
     setIsAddSectionOpen(false);
     
     // TODO: Implement the actual course creation when that functionality is available
@@ -99,41 +91,6 @@ const Sections = () => {
                   onChange={(e) => setNewSection({ ...newSection, title: e.target.value })}
                   placeholder="Section title" 
                 />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="instructor">Instructor or Category</Label>
-                <Input 
-                  id="instructor" 
-                  value={newSection.instructor}
-                  onChange={(e) => setNewSection({ ...newSection, instructor: e.target.value })}
-                  placeholder="Professor name or category" 
-                />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  value={newSection.description}
-                  onChange={(e) => setNewSection({ ...newSection, description: e.target.value })}
-                  placeholder="What's this section about?" 
-                />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="type">Type</Label>
-                <select
-                  id="type"
-                  value={newSection.type}
-                  onChange={(e) => setNewSection({ ...newSection, type: e.target.value })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="course">Course</option>
-                  <option value="assignment">Assignment Group</option>
-                  <option value="event">Event Collection</option>
-                  <option value="other">Other</option>
-                </select>
               </div>
               
               <div className="grid gap-2">
