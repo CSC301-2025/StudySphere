@@ -3,7 +3,7 @@ package com.app.Course;
 import org.springframework.stereotype.Service;
 
 import com.app.Assignment.AssignmentEntity;
-import com.app.Notes.NotesEntity;
+import com.app.Notes.NoteEntity;
 import com.app.Grade.GradeEntity;
 
 import java.util.List;
@@ -64,7 +64,7 @@ public class CourseService {
         return courseRepository.save(course);
     }
     
-    public CourseEntity addNote(String courseId, NotesEntity note) {
+    public CourseEntity addNote(String courseId, NoteEntity note) {
         CourseEntity course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         if (course.getNotes() != null) {

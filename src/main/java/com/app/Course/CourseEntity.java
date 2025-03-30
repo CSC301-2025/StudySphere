@@ -7,7 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 import com.app.Assignment.AssignmentEntity;
-import com.app.Notes.NotesEntity;
+import com.app.Notes.NoteEntity;
 import com.app.Grade.GradeEntity;
 
 
@@ -27,31 +27,6 @@ public class CourseEntity {
 
     // Embedded collections
     private List<AssignmentEntity> assignments;
-    private List<NotesEntity> notes;
+    private List<NoteEntity> notes;
     private List<GradeEntity> grades;
-
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getInstructor() {
-        return instructor;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getSchedule() {
-        return schedule;
-    }
-
 }
