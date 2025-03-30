@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Bookmark, Book, CalendarClock, File, MoreHorizontal, Pencil, Trash } from 'lucide-react';
+import { Plus, Search, Bookmark, Book, CalendarClock, File, MoreHorizontal, Pencil, Trash, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { type Course } from '@/context/CourseContext';
 import { toast } from "sonner";
 
 const Courses = () => {
-  const { courses, addCourse, deleteCourse, updateCourse } = useCourses();
+  const { courses, addCourse, deleteCourse, updateCourse, isLoading, isError } = useCourses();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
   const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
@@ -29,18 +29,17 @@ const Courses = () => {
   });
   
   // Filter courses based on search query
-  const filteredCourses = courses.filter(
+  const filteredCourses = courses?.filter(
     course => 
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
   // Handle adding a new course
   const handleAddCourse = () => {
     addCourse(newCourse);
     setNewCourse({ name: '', description: '', instructor: '', code: '', schedule: '', color: '#6D28D9' });
     setIsAddCourseOpen(false);
-    toast.success("Course added successfully");
   };
 
   // Handle editing a course
@@ -49,14 +48,12 @@ const Courses = () => {
       updateCourse(selectedCourse);
       setSelectedCourse(null);
       setIsEditCourseOpen(false);
-      toast.success("Course updated successfully");
     }
   };
 
   // Handle deleting a course
   const handleDeleteCourse = (courseId: string) => {
     deleteCourse(courseId);
-    toast.success("Course deleted successfully");
   };
 
   // Open edit dialog with selected course data
@@ -86,6 +83,28 @@ const Courses = () => {
       window.location.href = `/course/${courseId}`;
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="page-container flex items-center justify-center h-[80vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+          <p className="text-muted-foreground">Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <div className="page-container flex flex-col items-center justify-center h-[80vh]">
+        <div className="text-destructive mb-4">Failed to load courses</div>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

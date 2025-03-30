@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { AlertCircle, Lock } from "lucide-react";
+import { AlertCircle, Lock, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/context/AuthContext";
 import { useActivities } from "@/context/ActivityContext";
 import TextToSpeech from "@/components/TextToSpeech";
+import ReCAPTCHA from "react-google-recaptcha";
 
 // Form validation schema
 const formSchema = z.object({
@@ -24,11 +25,12 @@ type FormData = z.infer<typeof formSchema>;
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { login, isLoginBlocked, blockUntil, loginAttempts } = useAuth();
+  const { login, isLoginBlocked, blockUntil, requiresCaptcha } = useAuth();
   const { addActivity } = useActivities();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -67,17 +69,30 @@ const SignIn = () => {
     return () => clearInterval(intervalId);
   }, [isLoginBlocked, blockUntil]);
 
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
+
   const onSubmit = async (data: FormData) => {
     if (isLoginBlocked) return;
+    
+    // Check if CAPTCHA is required but not completed
+    if (requiresCaptcha && !captchaToken) {
+      setError("Please complete the CAPTCHA verification");
+      return;
+    }
     
     setIsSubmitting(true);
     setError(null);
     
     try {
-      await login({
-        email: data.email,
-        password: data.password,
-      });
+      await login(
+        {
+          email: data.email,
+          password: data.password,
+        },
+        captchaToken || undefined
+      );
       
       // Record login activity
       addActivity({
@@ -89,6 +104,20 @@ const SignIn = () => {
       navigate("/");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Login failed");
+      // Reset CAPTCHA if login fails
+      if (requiresCaptcha) {
+        setCaptchaToken(null);
+        // If you're using reCAPTCHA v2, you need to reset it
+        const recaptchaElement = document.querySelector('.g-recaptcha') as HTMLElement;
+        if (recaptchaElement) {
+          // Reset CAPTCHA - this is a simplistic approach, you might need to implement a proper reset
+          const iframe = recaptchaElement.querySelector('iframe');
+          if (iframe) {
+            const src = iframe.getAttribute('src') || '';
+            iframe.setAttribute('src', src);
+          }
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +125,7 @@ const SignIn = () => {
 
   // Generate content for text-to-speech
   const speechContent = isLoginBlocked 
-    ? "Sign In temporarily disabled due to too many failed attempts. Please try again later."
+    ? "Sign In temporarily disabled. Please try again later with CAPTCHA verification."
     : "Sign In. Enter your email and password to access your account. If you don't have an account, you can click on Sign Up to create a new account.";
 
   return (
@@ -119,21 +148,13 @@ const SignIn = () => {
             <Alert variant="destructive" className="mb-4">
               <Lock className="h-4 w-4" />
               <AlertDescription>
-                Account temporarily locked due to too many failed login attempts. 
-                Please try again in {timeLeft}.
+                Temporarily locked. Please try again in {timeLeft}.
               </AlertDescription>
             </Alert>
           ) : error ? (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : loginAttempts > 0 ? (
-            <Alert className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Failed login attempts: {loginAttempts} of 5 allowed
-              </AlertDescription>
             </Alert>
           ) : null}
 
@@ -177,12 +198,22 @@ const SignIn = () => {
                 )}
               />
 
+              {requiresCaptcha && !isLoginBlocked && (
+                <div className="py-2">
+                  <p className="text-sm mb-2 text-muted-foreground">Please complete the CAPTCHA verification:</p>
+                  <ReCAPTCHA
+                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // This is a test key
+                    onChange={handleCaptchaChange}
+                  />
+                </div>
+              )}
+
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isSubmitting || isLoginBlocked}
+                disabled={isSubmitting || isLoginBlocked || (requiresCaptcha && !captchaToken)}
               >
-                {isLoginBlocked ? "Sign In Disabled" : isSubmitting ? "Signing in..." : "Sign In"}
+                {isLoginBlocked ? "Sign In Locked" : isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
             </form>
           </Form>

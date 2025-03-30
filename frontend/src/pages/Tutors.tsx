@@ -1,20 +1,17 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { tutorService } from "@/services/tutorService";
-import { TutorPosting, TutorFilter, TutorProfile } from "@/types/tutors";
-import TutorCard from "@/components/TutorCard";
+import { TutorFilter } from "@/types/tutors";
 import TutorFilterForm from "@/components/TutorFilterForm";
-import TutorProfileForm from "@/components/TutorProfileForm";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertCircle, Plus } from "lucide-react";
-import CreateTutorPostingForm from "@/components/CreateTutorPostingForm";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import TutorListing from "@/components/TutorListing";
+import TutorProfileCreation from "@/components/TutorProfileCreation";
 
 const Tutors = () => {
   const [activeTab, setActiveTab] = useState<string>("browse");
@@ -36,8 +33,14 @@ const Tutors = () => {
   const { data: filteredTutors, isLoading: isFilterLoading, refetch: refetchFiltered } = useQuery({
     queryKey: ["tutors", "filtered", filters],
     queryFn: () => tutorService.filterTutorPostings(filters),
-    enabled: !!allTutors,
+    enabled: !!filters && (filters.location !== "all" || 
+      filters.university !== undefined || 
+      filters.courses !== undefined || 
+      (filters.priceRange?.min !== 0 || filters.priceRange?.max !== 100)),
   });
+
+  // Use either filtered results or all tutors
+  const tutorsToDisplay = filteredTutors || allTutors;
 
   // Fetch current user's tutor profile if they have one
   const { 
@@ -52,7 +55,16 @@ const Tutors = () => {
 
   // Handle filter changes
   const handleFilterChange = (newFilters: TutorFilter) => {
+    console.log("Applying filters:", newFilters);
     setFilters(newFilters);
+  };
+
+  // Handle clearing filters
+  const handleClearFilters = () => {
+    setFilters({
+      location: "all",
+      priceRange: { min: 0, max: 100 }
+    });
   };
 
   // Handle profile creation
@@ -79,7 +91,7 @@ const Tutors = () => {
   // Handle tutor posting creation
   const handleCreatePosting = async (postingData: Omit<TutorPosting, "id">) => {
     try {
-      const result = await tutorService.createTutorPosting(postingData);
+      await tutorService.createTutorPosting(postingData);
       
       toast({
         title: "Posting Created",
@@ -138,31 +150,12 @@ const Tutors = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading || isFilterLoading ? (
-                  <div className="flex justify-center py-10">
-                    <div className="animate-pulse">Loading tutors...</div>
-                  </div>
-                ) : isError ? (
-                  <div className="text-center py-10 text-red-500">
-                    Error loading tutors. Please try again later.
-                  </div>
-                ) : filteredTutors && filteredTutors.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredTutors.map((tutor) => (
-                      <TutorCard key={tutor.id} tutor={tutor} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10">
-                    <p className="mb-4">No tutors found with the current filters.</p>
-                    <Button variant="outline" onClick={() => setFilters({
-                      location: "all",
-                      priceRange: { min: 0, max: 100 }
-                    })}>
-                      Clear Filters
-                    </Button>
-                  </div>
-                )}
+                <TutorListing 
+                  tutors={tutorsToDisplay}
+                  isLoading={isLoading || isFilterLoading}
+                  isError={isError}
+                  onClearFilters={handleClearFilters}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -180,23 +173,12 @@ const Tutors = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isProfileLoading ? (
-                  <div className="flex justify-center py-10">
-                    <div className="animate-pulse">Loading profile data...</div>
-                  </div>
-                ) : !tutorProfile ? (
-                  <div className="space-y-6">
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        You need to create a tutor profile before you can create postings.
-                      </AlertDescription>
-                    </Alert>
-                    <TutorProfileForm onSubmit={handleCreateProfile} />
-                  </div>
-                ) : (
-                  <CreateTutorPostingForm onSubmit={handleCreatePosting} />
-                )}
+                <TutorProfileCreation
+                  tutorProfile={tutorProfile}
+                  isProfileLoading={isProfileLoading}
+                  onCreateProfile={handleCreateProfile}
+                  onCreatePosting={handleCreatePosting}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -206,4 +188,5 @@ const Tutors = () => {
   );
 };
 
+import { TutorPosting, TutorProfile } from "@/types/tutors";
 export default Tutors;

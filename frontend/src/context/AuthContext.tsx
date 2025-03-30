@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, LoginCredentials, RegisterData, AuthResponse } from "@/types/auth";
 import { authService } from "@/services/authService";
@@ -9,8 +10,9 @@ interface AuthContextType {
   isLoading: boolean;
   loginAttempts: number;
   isLoginBlocked: boolean;
+  requiresCaptcha: boolean;
   blockUntil: Date | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials, captchaToken?: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   resetLoginAttempts: () => void;
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   loginAttempts: 0,
   isLoginBlocked: false,
+  requiresCaptcha: false,
   blockUntil: null,
   login: async () => {},
   register: async () => {},
@@ -32,8 +35,10 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 // Constants for login attempt tracking
-const MAX_LOGIN_ATTEMPTS = 5;
-const BLOCK_DURATION_MINUTES = 5;
+const MAX_LOGIN_ATTEMPTS = 10;
+const CAPTCHA_THRESHOLD = 5;
+const BLOCK_THRESHOLD = 10; // New constant for when to start blocking
+const BLOCK_DURATION_BASE_MINUTES = 1;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -58,8 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // Clear expired block
         localStorage.removeItem('blockUntil');
-        localStorage.removeItem('loginAttempts');
-        setLoginAttempts(0);
       }
     }
     
@@ -83,9 +86,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkAuthStatus();
   }, []);
-
+  
   // Check if login is currently blocked
   const isLoginBlocked = !!blockUntil && blockUntil > new Date();
+
+  // Check if captcha is required (5+ attempts)
+  const requiresCaptcha = loginAttempts >= CAPTCHA_THRESHOLD;
 
   // Reset login attempts counter
   const resetLoginAttempts = () => {
@@ -95,34 +101,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('blockUntil');
   };
 
+  // Calculate exponential backoff time in minutes
+  const calculateLockDuration = (attempts: number) => {
+    // Only calculate duration for attempts beyond BLOCK_THRESHOLD
+    const attemptsOverThreshold = attempts - BLOCK_THRESHOLD;
+    if (attemptsOverThreshold <= 0) return 0;
+    
+    // Exponential increase: 1, 2, 4, 8, 16 minutes...
+    return BLOCK_DURATION_BASE_MINUTES * Math.pow(2, attemptsOverThreshold - 1);
+  };
+
   // Increment login attempts and potentially block login
   const incrementLoginAttempts = () => {
     const newAttempts = loginAttempts + 1;
     setLoginAttempts(newAttempts);
     localStorage.setItem('loginAttempts', newAttempts.toString());
     
-    // If max attempts reached, block login
-    if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
-      const blockTime = new Date();
-      blockTime.setMinutes(blockTime.getMinutes() + BLOCK_DURATION_MINUTES);
-      setBlockUntil(blockTime);
-      localStorage.setItem('blockUntil', blockTime.toISOString());
+    // Only implement temporary lock after reaching BLOCK_THRESHOLD
+    if (newAttempts >= BLOCK_THRESHOLD) {
+      const blockDurationMinutes = calculateLockDuration(newAttempts);
       
+      if (blockDurationMinutes > 0) {
+        const blockTime = new Date();
+        blockTime.setMinutes(blockTime.getMinutes() + blockDurationMinutes);
+        setBlockUntil(blockTime);
+        localStorage.setItem('blockUntil', blockTime.toISOString());
+        
+        toast({
+          title: "Too many failed attempts",
+          description: `Your account is temporarily locked. Please try again later.`,
+          variant: "destructive",
+        });
+      }
+    }
+    
+    // Still show CAPTCHA required toast at CAPTCHA_THRESHOLD
+    if (newAttempts === CAPTCHA_THRESHOLD) {
       toast({
-        title: "Account temporarily locked",
-        description: `Too many failed login attempts. Please try again after ${BLOCK_DURATION_MINUTES} minutes.`,
+        title: "CAPTCHA required",
+        description: "Please complete the CAPTCHA verification to continue.",
         variant: "destructive",
       });
     }
   };
 
-  const login = async (credentials: LoginCredentials) => {
-    // Check if login is blocked
+  const login = async (credentials: LoginCredentials, captchaToken?: string) => {
+    // Check if login is temporarily blocked
     if (isLoginBlocked) {
-      const minutes = Math.ceil((blockUntil!.getTime() - new Date().getTime()) / 60000);
+      return;
+    }
+    
+    // Check if CAPTCHA is required but not provided
+    if (requiresCaptcha && !captchaToken) {
       toast({
-        title: "Login temporarily disabled",
-        description: `Too many failed attempts. Please try again after ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}.`,
+        title: "CAPTCHA required",
+        description: "Please complete the CAPTCHA verification to continue.",
         variant: "destructive",
       });
       return;
@@ -135,19 +168,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Reset login attempts on successful login
       resetLoginAttempts();
       toast({
-        title: response.message,
+        title: "Login Successful",
         description: `Welcome back, ${response.userDto.firstName}!`,
       });
     } catch (error) {
       // Increment failed login attempts
       incrementLoginAttempts();
       
-      const attemptsLeft = MAX_LOGIN_ATTEMPTS - loginAttempts - 1;
       let errorMessage = error instanceof Error ? error.message : "Invalid credentials";
-      
-      if (attemptsLeft > 0 && attemptsLeft < MAX_LOGIN_ATTEMPTS) {
-        errorMessage += `. ${attemptsLeft} ${attemptsLeft === 1 ? 'attempt' : 'attempts'} left before temporary lockout.`;
-      }
       
       toast({
         title: "Login failed",
@@ -197,6 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         loginAttempts,
         isLoginBlocked,
+        requiresCaptcha,
         blockUntil,
         login,
         register,

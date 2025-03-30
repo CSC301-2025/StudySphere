@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Routes, Route, Navigate } from "react-router-dom";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, Pencil, Loader2 } from "lucide-react";
 import { useCourses } from "../context/CourseContext";
 import CourseHeader from "../components/CourseHeader";
 import CourseTab from "../components/CourseTab";
@@ -14,8 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { courseService } from "@/services/courseService";
 
-// Define tabs - discussions tab already removed
+// Define tabs
 const tabs = [
   { id: "overview", label: "Overview" },
   { id: "assignments", label: "Assignments" },
@@ -26,11 +28,76 @@ const tabs = [
 const CourseDetails = () => {
   const { courseId, tabId } = useParams<{ courseId: string; tabId: string }>();
   const navigate = useNavigate();
-  const { getCourse, toggleAssignmentStatus, addNote, updateCourse } = useCourses();
+  const { getCourse, isLoading: isContextLoading, toggleAssignmentStatus, addNote, updateCourse } = useCourses();
+  const queryClient = useQueryClient();
   
-  const course = getCourse(courseId || "");
   const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
-  const [editableCourse, setEditableCourse] = useState<typeof course | null>(null);
+  const [editableCourse, setEditableCourse] = useState<any>(null);
+  
+  // Fetch course data from API
+  const { 
+    data: course, 
+    isLoading: isCourseLoading, 
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['course', courseId],
+    queryFn: () => courseId ? courseService.getCourseById(courseId) : Promise.reject('No course ID'),
+    // Use local data from context while API is loading
+    placeholderData: courseId ? getCourse(courseId) : undefined,
+    enabled: !!courseId
+  });
+  
+  // Update course mutation
+  const updateCourseMutation = useMutation({
+    mutationFn: (data: any) => courseService.updateCourse(data.id, data),
+    onSuccess: (data) => {
+      // Update local context with API data
+      updateCourse(data);
+      // Invalidate the course query
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Course updated successfully");
+      setIsEditCourseOpen(false);
+    },
+    onError: (err) => {
+      console.error("Error updating course:", err);
+      toast.error("Failed to update course");
+    }
+  });
+  
+  // Toggle assignment status mutation
+  const toggleAssignmentMutation = useMutation({
+    mutationFn: (assignmentId: string) => courseId ? 
+      courseService.toggleAssignmentStatus(courseId, assignmentId) : 
+      Promise.reject('No course ID'),
+    onSuccess: () => {
+      // Invalidate the course query
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+    onError: (err) => {
+      console.error("Error toggling assignment status:", err);
+      toast.error("Failed to update assignment status");
+    }
+  });
+  
+  // Add note mutation
+  const addNoteMutation = useMutation({
+    mutationFn: (noteData: Omit<any, "id" | "dateAdded">) => courseId ? 
+      courseService.addNote(courseId, noteData) : 
+      Promise.reject('No course ID'),
+    onSuccess: () => {
+      // Invalidate the course query
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Note added successfully");
+    },
+    onError: (err) => {
+      console.error("Error adding note:", err);
+      toast.error("Failed to add note");
+    }
+  });
   
   // Set editable course when original course changes
   useEffect(() => {
@@ -39,12 +106,35 @@ const CourseDetails = () => {
     }
   }, [course]);
   
-  // Redirect to 404 if course not found
+  // Redirect to 404 if course not found after loading
   useEffect(() => {
-    if (!course && courseId) {
+    if (!isCourseLoading && !isContextLoading && !course && courseId) {
       navigate("/404", { replace: true });
     }
-  }, [course, courseId, navigate]);
+  }, [course, courseId, navigate, isCourseLoading, isContextLoading]);
+  
+  // Show loading state
+  const isLoading = isCourseLoading || isContextLoading;
+  if (isLoading) {
+    return (
+      <div className="page-container flex justify-center items-center h-[80vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+          <p className="text-muted-foreground">Loading course details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show error state
+  if (isError) {
+    return (
+      <div className="page-container flex flex-col justify-center items-center h-[80vh]">
+        <div className="text-destructive mb-4">Error loading course details</div>
+        <Button onClick={() => navigate("/courses")}>Return to Courses</Button>
+      </div>
+    );
+  }
   
   if (!course) {
     return null;
@@ -53,10 +143,21 @@ const CourseDetails = () => {
   // Handle editing a course
   const handleEditCourse = () => {
     if (editableCourse) {
-      updateCourse(editableCourse);
-      setIsEditCourseOpen(false);
-      toast.success("Course updated successfully");
+      // Use mutation to update course
+      updateCourseMutation.mutate(editableCourse);
     }
+  };
+  
+  // Handle toggling assignment status
+  const handleToggleAssignment = (assignmentId: string) => {
+    // Update backend
+    toggleAssignmentMutation.mutate(assignmentId);
+  };
+  
+  // Handle adding a note
+  const handleAddNote = (noteData: Omit<any, "id" | "dateAdded">) => {
+    // Update backend
+    addNoteMutation.mutate(noteData);
   };
 
   // Course overview content
@@ -190,13 +291,13 @@ const CourseDetails = () => {
         <Route path="/assignments" element={
           <AssignmentList 
             course={course} 
-            toggleStatus={toggleAssignmentStatus} 
+            toggleStatus={handleToggleAssignment} 
           />
         } />
         <Route path="/notes" element={
           <NotesSection 
             course={course} 
-            addNote={(note) => addNote(course.id, note)} 
+            addNote={handleAddNote} 
           />
         } />
         <Route path="/grades" element={<GradeSection course={course} />} />

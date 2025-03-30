@@ -1,8 +1,7 @@
-
 import { LoginCredentials, RegisterData, AuthResponse, TokenData, User } from "@/types/auth";
 
-// Base API URL - should be updated based on your backend configuration
-const API_BASE_URL = "http://localhost:8080/api/auth"; // Update this with your actual API URL
+// Base API URL - using the Spring Boot backend URL
+const API_BASE_URL = "/api/auth";
 
 // Helper function for making API requests
 async function fetchApi<T>(
@@ -10,7 +9,7 @@ async function fetchApi<T>(
   method: string = "GET",
   data?: unknown
 ): Promise<T> {
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
 
@@ -21,59 +20,62 @@ async function fetchApi<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const fetchOptions: RequestInit = {
       method,
       headers,
-      body: data ? JSON.stringify(data) : undefined,
-    });
+      credentials: "include"
+    };
+
+    if (data) {
+      fetchOptions.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
+
+    // For non-JSON responses (like 204 No Content)
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    // Try to parse JSON response
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (e) {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return {} as T;
+    }
 
     // Check if the response is successful
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: `HTTP error! Status: ${response.status}` }));
-      console.error(`API request failed: ${endpoint}`, errorData);
-      throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+      throw new Error(responseData.message || `HTTP error! Status: ${response.status}`);
     }
 
-    return response.json();
+    return responseData;
   } catch (error) {
     console.error(`API request failed: ${endpoint}`, error);
     throw error;
   }
 }
 
-// MOCK DATA for demonstration purposes
-const MOCK_USER: User = {
-  id: "1",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  phoneNumber: "555-123-4567",
-  recoveryEmail: "recovery@example.com",
-  roles: [{ id: "1", name: "Student" }]
-};
-
-const MOCK_TOKEN = "mock-jwt-token";
-const MOCK_REFRESH = "mock-refresh-token";
-
 export const authService = {
   // Login user
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      // For demonstration, return mock data instead of making an API call
-      console.log("Mock login with:", credentials);
+      // Call the actual Spring Boot login endpoint
+      const response = await fetchApi<{success: boolean; message: string; data: AuthResponse}>("/login", "POST", credentials);
       
-      // Store tokens in localStorage
-      localStorage.setItem("accessToken", MOCK_TOKEN);
-      localStorage.setItem("refreshToken", MOCK_REFRESH);
-      
-      const mockResponse: AuthResponse = {
-        accessToken: MOCK_TOKEN,
-        refreshToken: MOCK_REFRESH,
-        userDto: MOCK_USER,
-        message: "Login successful"
-      };
-      
-      return mockResponse;
+      if (response.success && response.data) {
+        // Store tokens in localStorage
+        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
+        
+        return response.data;
+      } else {
+        throw new Error(response.message || "Login failed");
+      }
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -83,11 +85,12 @@ export const authService = {
   // Register new user
   register: async (userData: RegisterData): Promise<void> => {
     try {
-      // For demonstration, just log the registration attempt
-      console.log("Mock register with:", userData);
+      // Call the actual Spring Boot register endpoint
+      const response = await fetchApi<{success: boolean; message: string}>("/register", "POST", userData);
       
-      // In a real app, you would call the API here
-      // await fetchApi<{ success: boolean; message: string }>("/register", "POST", userData);
+      if (!response.success) {
+        throw new Error(response.message || "Registration failed");
+      }
     } catch (error) {
       console.error("Registration error:", error);
       throw error;
@@ -113,17 +116,18 @@ export const authService = {
         refreshToken,
       };
 
-      // For demonstration, return mock data instead of making an API call
-      console.log("Mock token refresh with:", tokenData);
+      // Call the actual Spring Boot refresh token endpoint
+      const response = await fetchApi<{success: boolean; message: string; data: AuthResponse}>("/refresh", "POST", tokenData);
       
-      const mockResponse: AuthResponse = {
-        accessToken: MOCK_TOKEN,
-        refreshToken: MOCK_REFRESH,
-        userDto: MOCK_USER,
-        message: "Token refresh successful"
-      };
-      
-      return mockResponse;
+      if (response.success && response.data) {
+        // Update tokens in localStorage
+        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
+        
+        return response.data;
+      } else {
+        throw new Error(response.message || "Token refresh failed");
+      }
     } catch (error) {
       // If refresh fails, logout the user
       authService.logout();
@@ -135,9 +139,14 @@ export const authService = {
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
     try {
-      // For demonstration, return mock user data
-      console.log("Getting current user from mock data");
-      return MOCK_USER;
+      // Call the actual Spring Boot user profile endpoint
+      const response = await fetchApi<{success: boolean; message: string; data: User}>("/me", "GET");
+      
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || "Failed to get user profile");
+      }
     } catch (error) {
       console.error("Get current user error:", error);
       throw error;
@@ -148,4 +157,37 @@ export const authService = {
   isAuthenticated: (): boolean => {
     return !!localStorage.getItem("accessToken");
   },
+
+  // Validate tokens
+  validateTokens: async (): Promise<AuthResponse> => {
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+    
+    if (!accessToken || !refreshToken) {
+      throw new Error("No tokens available");
+    }
+
+    try {
+      const tokenData: TokenData = {
+        accessToken,
+        refreshToken,
+      };
+
+      // Call the actual Spring Boot validate tokens endpoint
+      const response = await fetchApi<{success: boolean; message: string; data: AuthResponse}>("/validateTokens", "POST", tokenData);
+      
+      if (response.success && response.data) {
+        // Update tokens in localStorage if they changed
+        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
+        
+        return response.data;
+      } else {
+        throw new Error(response.message || "Token validation failed");
+      }
+    } catch (error) {
+      console.error("Token validation error:", error);
+      throw error;
+    }
+  }
 };

@@ -15,7 +15,7 @@ export const TextToSpeechProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [ttsEnabled, setTtsEnabled] = useState(() => {
     // Check localStorage for saved preference
     const savedPreference = localStorage.getItem("tts-enabled");
-    return savedPreference ? savedPreference === "true" : true; // Default to enabled
+    return savedPreference ? savedPreference === "true" : false; // Default to disabled
   });
   
   const [isAnyAudioPlaying, setIsAnyAudioPlaying] = useState(false);

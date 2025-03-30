@@ -1,8 +1,10 @@
-
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { courseService } from "../services/courseService";
+import { toast } from "sonner";
 
 // Define course types
-type Assignment = {
+export type Assignment = {
   id: string;
   title: string;
   description: string;
@@ -22,7 +24,7 @@ export type Note = {
   fileUrl?: string;
 };
 
-type Grade = {
+export type Grade = {
   id: string;
   title: string;
   percentage: number;
@@ -42,194 +44,19 @@ export type Course = {
   grades: Grade[];
 };
 
-// Mock data for initial state
-const mockCourses: Course[] = [
-  {
-    id: "c1",
-    name: "Introduction to Computer Science",
-    instructor: "Dr. Alex Johnson",
-    description: "Fundamental principles of computer science and programming.",
-    code: "CS101",
-    schedule: "Mon/Wed 10:00 AM - 11:30 AM",
-    assignments: [
-      {
-        id: "a1",
-        title: "Algorithmic Problem Solving",
-        description: "Solve five algorithmic problems using pseudocode.",
-        dueDate: "2023-10-15T23:59:59",
-        isSubmitted: false,
-        courseName: "Introduction to Computer Science",
-        isRecurring: false
-      },
-      {
-        id: "a2",
-        title: "Programming Basics",
-        description: "Create a simple program that demonstrates variables, loops, and conditionals.",
-        dueDate: "2023-10-22T23:59:59",
-        isSubmitted: true,
-        courseName: "Introduction to Computer Science",
-        isRecurring: false
-      }
-    ],
-    notes: [
-      {
-        id: "n1",
-        title: "Lecture 1: Introduction",
-        content: "Overview of computer science fundamentals...",
-        dateAdded: "2023-09-05T10:30:00",
-        fileUrl: "#"
-      },
-      {
-        id: "n2",
-        title: "Lecture 2: Variables and Data Types",
-        content: "In-depth exploration of data types...",
-        dateAdded: "2023-09-07T10:30:00",
-        fileUrl: "#"
-      }
-    ],
-    grades: [
-      {
-        id: "g1",
-        title: "Quiz 1",
-        percentage: 90,
-        weight: 10
-      },
-      {
-        id: "g2",
-        title: "Midterm",
-        percentage: 85,
-        weight: 30
-      }
-    ]
-  },
-  {
-    id: "c2",
-    name: "Data Structures and Algorithms",
-    instructor: "Prof. Maria Garcia",
-    description: "Advanced data structures and algorithm design and analysis.",
-    code: "CS202",
-    schedule: "Tue/Thu 1:00 PM - 2:30 PM",
-    assignments: [
-      {
-        id: "a3",
-        title: "Linked List Implementation",
-        description: "Implement a doubly linked list with various operations.",
-        dueDate: "2023-10-18T23:59:59",
-        isSubmitted: false,
-        courseName: "Data Structures and Algorithms",
-        isRecurring: false
-      }
-    ],
-    notes: [
-      {
-        id: "n3",
-        title: "Lecture 1: Introduction to Data Structures",
-        content: "Overview of fundamental data structures...",
-        dateAdded: "2023-09-06T13:00:00",
-        fileUrl: "#"
-      }
-    ],
-    grades: [
-      {
-        id: "g3",
-        title: "Assignment 1",
-        percentage: 92,
-        weight: 15
-      }
-    ]
-  },
-  {
-    id: "c3",
-    name: "Database Systems",
-    instructor: "Dr. James Wilson",
-    description: "Design and implementation of database management systems.",
-    code: "CS305",
-    schedule: "Mon/Wed/Fri 2:00 PM - 3:00 PM",
-    assignments: [
-      {
-        id: "a4",
-        title: "ER Diagram Design",
-        description: "Create an ER diagram for a university database system.",
-        dueDate: "2023-10-20T23:59:59",
-        isSubmitted: false,
-        courseName: "Database Systems",
-        isRecurring: false
-      }
-    ],
-    notes: [
-      {
-        id: "n4",
-        title: "Lecture 1: Relational Model",
-        content: "Introduction to the relational data model...",
-        dateAdded: "2023-09-04T14:00:00",
-        fileUrl: "#"
-      }
-    ],
-    grades: [
-      {
-        id: "g4",
-        title: "Quiz 1",
-        percentage: 100,
-        weight: 5
-      }
-    ]
-  },
-  {
-    id: "c4",
-    name: "Web Development",
-    instructor: "Prof. Sarah Lee",
-    description: "Modern web development principles and frameworks.",
-    code: "CS350",
-    schedule: "Tue/Thu 10:00 AM - 11:30 AM",
-    assignments: [
-      {
-        id: "a5",
-        title: "Personal Portfolio Website",
-        description: "Create a responsive personal portfolio using HTML, CSS, and JavaScript.",
-        dueDate: "2023-10-25T23:59:59",
-        isSubmitted: false,
-        courseName: "Web Development",
-        isRecurring: false
-      }
-    ],
-    notes: [],
-    grades: []
-  },
-  {
-    id: "c5",
-    name: "Machine Learning",
-    instructor: "Dr. Robert Chen",
-    description: "Introduction to machine learning algorithms and applications.",
-    code: "CS440",
-    schedule: "Wed/Fri 3:30 PM - 5:00 PM",
-    assignments: [],
-    notes: [],
-    grades: []
-  },
-  {
-    id: "c6",
-    name: "Computer Networks",
-    instructor: "Prof. David Miller",
-    description: "Fundamentals of computer networking and protocols.",
-    code: "CS330",
-    schedule: "Mon/Wed 1:00 PM - 2:30 PM",
-    assignments: [],
-    notes: [],
-    grades: []
-  }
-];
-
 // Context type
 type CourseContextType = {
   courses: Course[];
   assignments: Assignment[];
+  isLoading: boolean;
+  isError: boolean;
   getCourse: (id: string) => Course | undefined;
   addAssignment: (courseId: string, assignment: Omit<Assignment, "id" | "courseName" | "isRecurring" | "recurrencePattern" | "recurrenceEndDate"> & { isRecurring?: boolean, recurrencePattern?: 'daily' | 'weekly' | 'monthly', recurrenceEndDate?: string }) => void;
   updateAssignment: (assignment: Assignment) => void;
-  toggleAssignmentStatus: (assignmentId: string) => void;
+  toggleAssignmentStatus: (courseId: string, assignmentId: string) => void;
   addNote: (courseId: string, note: Omit<Note, "id" | "dateAdded">) => void;
   addCourse: (course: Omit<Course, "id" | "assignments" | "notes" | "grades">) => void;
-  addGrade: (courseId: string, grade: Omit<Grade, "id" | "maxScore">) => void;
+  addGrade: (courseId: string, grade: Omit<Grade, "id">) => void;
   // New functions for editing and removing items
   deleteCourse: (courseId: string) => void;
   updateCourse: (updatedCourse: Course) => void;
@@ -245,221 +72,210 @@ const CourseContext = createContext<CourseContextType | undefined>(undefined);
 
 // Context provider component
 export const CourseProvider = ({ children }: { children: ReactNode }) => {
-  const [courses, setCourses] = useState<Course[]>(mockCourses);
+  const queryClient = useQueryClient();
+
+  // Fetch courses from the API
+  const { 
+    data: courses = [], 
+    isLoading, 
+    isError 
+  } = useQuery({
+    queryKey: ['courses'],
+    queryFn: courseService.getAllCourses
+  });
+
+  // Create mutations for CRUD operations
+  const createCourseMutation = useMutation({
+    mutationFn: courseService.createCourse,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Course added successfully");
+    },
+    onError: (error) => {
+      console.error("Error creating course:", error);
+      toast.error("Failed to add course");
+    }
+  });
+
+  const updateCourseMutation = useMutation({
+    mutationFn: (course: Course) => courseService.updateCourse(course.id, course),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Course updated successfully");
+    },
+    onError: (error) => {
+      console.error("Error updating course:", error);
+      toast.error("Failed to update course");
+    }
+  });
+
+  const deleteCourseMutation = useMutation({
+    mutationFn: courseService.deleteCourse,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Course deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting course:", error);
+      toast.error("Failed to delete course");
+    }
+  });
+
+  const addAssignmentMutation = useMutation({
+    mutationFn: ({ courseId, assignment }: { courseId: string, assignment: any }) => 
+      courseService.addAssignment(courseId, assignment),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Assignment added successfully");
+    },
+    onError: (error) => {
+      console.error("Error adding assignment:", error);
+      toast.error("Failed to add assignment");
+    }
+  });
+
+  const toggleAssignmentMutation = useMutation({
+    mutationFn: ({ courseId, assignmentId }: { courseId: string, assignmentId: string }) => 
+      courseService.toggleAssignmentStatus(courseId, assignmentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+    onError: (error) => {
+      console.error("Error toggling assignment status:", error);
+      toast.error("Failed to update assignment");
+    }
+  });
+
+  const addNoteMutation = useMutation({
+    mutationFn: ({ courseId, note }: { courseId: string, note: Omit<Note, "id" | "dateAdded"> }) => 
+      courseService.addNote(courseId, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Note added successfully");
+    },
+    onError: (error) => {
+      console.error("Error adding note:", error);
+      toast.error("Failed to add note");
+    }
+  });
+
+  const addGradeMutation = useMutation({
+    mutationFn: ({ courseId, grade }: { courseId: string, grade: Omit<Grade, "id"> }) => 
+      courseService.addGrade(courseId, grade),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success("Grade added successfully");
+    },
+    onError: (error) => {
+      console.error("Error adding grade:", error);
+      toast.error("Failed to add grade");
+    }
+  });
 
   // Calculate all assignments across courses
-  const assignments = courses.flatMap(course => 
+  const assignments = courses?.flatMap(course => 
     course.assignments.map(assignment => ({
       ...assignment,
       courseName: course.name
     }))
-  );
+  ) || [];
 
   // Get a specific course by ID
   const getCourse = (id: string) => {
-    return courses.find(course => course.id === id);
+    return courses?.find(course => course.id === id);
   };
 
   // Add a new assignment to a course
   const addAssignment = (courseId: string, assignment: Omit<Assignment, "id" | "courseName" | "isRecurring" | "recurrencePattern" | "recurrenceEndDate"> & { isRecurring?: boolean, recurrencePattern?: 'daily' | 'weekly' | 'monthly', recurrenceEndDate?: string }) => {
     const { isRecurring = false, recurrencePattern, recurrenceEndDate, ...restAssignment } = assignment;
     
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              assignments: [
-                ...course.assignments,
-                {
-                  ...restAssignment,
-                  id: `a${Date.now()}`,
-                  courseName: course.name,
-                  isRecurring,
-                  recurrencePattern,
-                  recurrenceEndDate
-                }
-              ]
-            }
-          : course
-      )
-    );
+    addAssignmentMutation.mutate({
+      courseId,
+      assignment: {
+        ...restAssignment,
+        isRecurring,
+        recurrencePattern,
+        recurrenceEndDate
+      }
+    });
   };
 
-  // Update an existing assignment
+  // Update an existing assignment (not implemented in API yet)
   const updateAssignment = (updatedAssignment: Assignment) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => ({
-        ...course,
-        assignments: course.assignments.map(assignment => 
-          assignment.id === updatedAssignment.id
-            ? updatedAssignment
-            : assignment
-        )
-      }))
-    );
+    // This would need a backend endpoint
+    toast.error("Update assignment functionality is not implemented in the API yet");
   };
 
-  // Delete an assignment
+  // Delete an assignment (not implemented in API yet)
   const deleteAssignment = (assignmentId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => ({
-        ...course,
-        assignments: course.assignments.filter(assignment => 
-          assignment.id !== assignmentId
-        )
-      }))
-    );
+    // This would need a backend endpoint
+    toast.error("Delete assignment functionality is not implemented in the API yet");
   };
 
   // Toggle assignment submission status
-  const toggleAssignmentStatus = (assignmentId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => ({
-        ...course,
-        assignments: course.assignments.map(assignment => 
-          assignment.id === assignmentId
-            ? { ...assignment, isSubmitted: !assignment.isSubmitted }
-            : assignment
-        )
-      }))
-    );
+  const toggleAssignmentStatus = (courseId: string, assignmentId: string) => {
+    toggleAssignmentMutation.mutate({ courseId, assignmentId });
   };
 
   // Add a new note to a course
   const addNote = (courseId: string, note: Omit<Note, "id" | "dateAdded">) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              notes: [
-                ...course.notes,
-                {
-                  ...note,
-                  id: `n${Date.now()}`,
-                  dateAdded: new Date().toISOString()
-                }
-              ]
-            }
-          : course
-      )
-    );
+    addNoteMutation.mutate({ courseId, note });
   };
 
-  // Delete a note
+  // Delete a note (not implemented in API yet)
   const deleteNote = (courseId: string, noteId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              notes: course.notes.filter(note => note.id !== noteId)
-            }
-          : course
-      )
-    );
+    // This would need a backend endpoint
+    toast.error("Delete note functionality is not implemented in the API yet");
   };
 
-  // Update a note
+  // Update a note (not implemented in API yet)
   const updateNote = (courseId: string, updatedNote: Note) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              notes: course.notes.map(note => 
-                note.id === updatedNote.id ? updatedNote : note
-              )
-            }
-          : course
-      )
-    );
+    // This would need a backend endpoint
+    toast.error("Update note functionality is not implemented in the API yet");
   };
 
   // Add a new course
   const addCourse = (courseData: Omit<Course, "id" | "assignments" | "notes" | "grades">) => {
-    const newCourse: Course = {
-      ...courseData,
-      id: `c${Date.now()}`,
-      assignments: [],
-      notes: [],
-      grades: []
-    };
-    
-    setCourses(prevCourses => [...prevCourses, newCourse]);
+    createCourseMutation.mutate(courseData);
   };
 
   // Delete a course
   const deleteCourse = (courseId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.filter(course => course.id !== courseId)
-    );
+    deleteCourseMutation.mutate(courseId);
   };
 
   // Update a course
   const updateCourse = (updatedCourse: Course) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === updatedCourse.id ? updatedCourse : course
-      )
-    );
+    updateCourseMutation.mutate(updatedCourse);
   };
 
-  // Add a new grade to a course (maxScore is now fixed at 100)
-  const addGrade = (courseId: string, grade: Omit<Grade, "id" | "maxScore">) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              grades: [
-                ...course.grades,
-                {
-                  ...grade,
-                  id: `g${Date.now()}`,
-                  maxScore: 100
-                }
-              ]
-            }
-          : course
-      )
-    );
+  // Add a new grade to a course
+  const addGrade = (courseId: string, grade: Omit<Grade, "id">) => {
+    addGradeMutation.mutate({ 
+      courseId, 
+      grade: {
+        ...grade
+      }
+    });
   };
 
-  // Delete a grade
+  // Delete a grade (not implemented in API yet)
   const deleteGrade = (courseId: string, gradeId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              grades: course.grades.filter(grade => grade.id !== gradeId)
-            }
-          : course
-      )
-    );
+    // This would need a backend endpoint
+    toast.error("Delete grade functionality is not implemented in the API yet");
   };
 
-  // Update a grade
+  // Update a grade (not implemented in API yet)
   const updateGrade = (courseId: string, updatedGrade: Grade) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId
-          ? {
-              ...course,
-              grades: course.grades.map(grade => 
-                grade.id === updatedGrade.id ? updatedGrade : grade
-              )
-            }
-          : course
-      )
-    );
+    // This would need a backend endpoint
+    toast.error("Update grade functionality is not implemented in the API yet");
   };
 
   const value = {
     courses,
     assignments,
+    isLoading,
+    isError,
     getCourse,
     addAssignment,
     updateAssignment,
