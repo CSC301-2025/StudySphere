@@ -5,12 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.Dto.ApiResponse;
-import com.app.Dto.CreateGradeDto;
-import com.app.Dto.GradeDto;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/grades")
@@ -23,28 +20,25 @@ public class GradeController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<GradeDto>>> getAllGrades() {
-        List<GradeDto> dtos = gradeService.getAllGrades().stream()
-            .map(gradeService::convertToDto)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(new ApiResponse<>(true, "Grades retrieved", dtos));
+    public ResponseEntity<ApiResponse<List<GradeEntity>>> getAllGrades() {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Grades retrieved", gradeService.getAllGrades()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<GradeDto>> getGrade(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<GradeEntity>> getGrade(@PathVariable String id) {
         GradeEntity grade = gradeService.getGradeById(id);
         if(grade != null) {
-            return ResponseEntity.ok(new ApiResponse<>(true, "Grade found", gradeService.convertToDto(grade)));
+            return ResponseEntity.ok(new ApiResponse<>(true, "Grade found", grade));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(new ApiResponse<>(false, "Grade not found", null));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<GradeDto>> createGrade(@Valid @RequestBody CreateGradeDto createGradeDto) {
+    public ResponseEntity<ApiResponse<GradeEntity>> createGrade(@Valid @RequestBody GradeEntity new_grade) {
         try {
-            GradeEntity grade = gradeService.saveGrade(createGradeDto);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Grade created", gradeService.convertToDto(grade)));
+            GradeEntity grade = gradeService.saveGrade(new_grade);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Grade created", grade));
         } catch(Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "An error occurred while creating grade.", null));
@@ -52,10 +46,10 @@ public class GradeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<GradeDto>> updateGrade(@PathVariable String id, @Valid @RequestBody CreateGradeDto createGradeDto) {
+    public ResponseEntity<ApiResponse<GradeEntity>> updateGrade(@PathVariable String id, @Valid @RequestBody GradeEntity new_grade) {
         try {
-            GradeEntity grade = gradeService.updateGrade(id, createGradeDto);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Grade updated", gradeService.convertToDto(grade)));
+            GradeEntity grade = gradeService.updateGrade(id, new_grade);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Grade updated", grade));
         } catch(RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ApiResponse<>(false, e.getMessage(), null));

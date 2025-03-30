@@ -1,12 +1,9 @@
 package com.app.Grade;
 
-import com.app.Dto.CreateGradeDto;
-import com.app.Dto.GradeDto;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class GradeService {
@@ -26,40 +23,23 @@ public class GradeService {
     }
 
     /**
-     * Converts a GradeEntity to a GradeDto to be returned in responses.
-     */
-    public GradeDto convertToDto(GradeEntity grade) {
-        GradeDto dto = new GradeDto();
-        dto.setId(grade.getId());
-        dto.setAssignmentName(grade.getAssignmentName());
-        dto.setGradePercentage(grade.getGradePercentage());
-        dto.setWeightPercentage(grade.getWeightPercentage());
-        return dto;
-    }
-
-    /**
      * Saves a new grade to the database.
      */
-    public GradeEntity saveGrade(CreateGradeDto createGradeDto) {
-        GradeEntity grade = new GradeEntity(
-            createGradeDto.getAssignmentName(),
-            createGradeDto.getGradePercentage(),
-            createGradeDto.getWeightPercentage()
-        );
+    public GradeEntity saveGrade(GradeEntity grade) {
         return gradeRepository.save(grade);
     }
 
     /**
      * Updates an existing grade.
      */
-    public GradeEntity updateGrade(String id, CreateGradeDto createGradeDto) {
+    public GradeEntity updateGrade(String id, GradeEntity grade) {
         Optional<GradeEntity> optionalGrade = gradeRepository.findById(id);
         if(optionalGrade.isPresent()){
-            GradeEntity grade = optionalGrade.get();
-            grade.setAssignmentName(createGradeDto.getAssignmentName());
-            grade.setGradePercentage(createGradeDto.getGradePercentage());
-            grade.setWeightPercentage(createGradeDto.getWeightPercentage());
-            return gradeRepository.save(grade);
+            GradeEntity updated_grade = optionalGrade.get();
+            updated_grade.setAssignmentName(grade.getAssignmentName());
+            updated_grade.setGradePercentage(grade.getGradePercentage());
+            updated_grade.setWeightPercentage(grade.getWeightPercentage());
+            return gradeRepository.save(updated_grade);
         } else {
             throw new RuntimeException("Grade not found with id: " + id);
         }
