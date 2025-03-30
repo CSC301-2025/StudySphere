@@ -15,7 +15,7 @@ export const tutorService = {
   // Get all tutor postings
   getAllTutorPostings: async (): Promise<TutorPosting[]> => {
     try {
-      const response = await axiosClient.get(`${API_BASE_URL}/posting`);
+      const response = await axiosClient.get<TutorPosting[]>(`${API_BASE_URL}/posting`);
       console.log("Fetched tutor postings:", response.data);
       return response.data;
     } catch (error) {
@@ -28,7 +28,7 @@ export const tutorService = {
   filterTutorPostings: async (filter: TutorFilter): Promise<TutorPosting[]> => {
     try {
       console.log("Filtering with:", filter);
-      const response = await axiosClient.post(`${API_BASE_URL}/posting/filter`, filter);
+      const response = await axiosClient.post<TutorPosting[]>(`${API_BASE_URL}/posting/filter`, filter);
       console.log("Filtered results:", response.data);
       return response.data;
     } catch (error) {
@@ -42,7 +42,7 @@ export const tutorService = {
     postingData: Omit<TutorPosting, "id">
   ): Promise<TutorPosting> => {
     try {
-      const response = await axiosClient.post(`${API_BASE_URL}/posting`, postingData);
+      const response = await axiosClient.post<TutorPosting>(`${API_BASE_URL}/posting`, postingData);
       return response.data;
     } catch (error: any) {
       const apiError: ApiError = {
@@ -61,7 +61,7 @@ export const tutorService = {
   // Get tutor posting by ID
   getTutorPostingById: async (id: string): Promise<TutorPosting | null> => {
     try {
-      const response = await axiosClient.get(`${API_BASE_URL}/posting/${id}`);
+      const response = await axiosClient.get<TutorPosting>(`${API_BASE_URL}/posting/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching tutor posting with ID ${id}:`, error);
@@ -74,7 +74,7 @@ export const tutorService = {
     profileData: Omit<TutorProfile, "id" | "createdAt">
   ): Promise<TutorProfile> => {
     try {
-      const response = await axiosClient.post(`${API_BASE_URL}/profile`, profileData);
+      const response = await axiosClient.post<TutorProfile>(`${API_BASE_URL}/profile`, profileData);
       return response.data;
     } catch (error: any) {
       const apiError: ApiError = {
@@ -95,10 +95,10 @@ export const tutorService = {
     try {
       // For current user, use the /profile endpoint without userId
       const endpoint = userId ? `/profile/${userId}` : "/profile";
-      const response = await axiosClient.get(`${API_BASE_URL}${endpoint}`);
+      const response = await axiosClient.get<TutorProfile>(`${API_BASE_URL}${endpoint}`);
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status !== 404) {
+      if ((error as any).isAxiosError && error.response?.status !== 404) {
         console.error("Error fetching tutor profile:", error);
       }
       return null;
@@ -110,7 +110,7 @@ export const tutorService = {
     profileData: Partial<TutorProfile>
   ): Promise<TutorProfile> => {
     try {
-      const response = await axiosClient.patch(`${API_BASE_URL}/profile`, profileData);
+      const response = await axiosClient.patch<TutorProfile>(`${API_BASE_URL}/profile`, profileData);
       return response.data;
     } catch (error: any) {
       const apiError: ApiError = {
