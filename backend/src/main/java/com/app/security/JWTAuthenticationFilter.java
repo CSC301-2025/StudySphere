@@ -29,6 +29,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         String token = getJWTFromRequest(request);
+        System.out.println("Request: " + request.getRequestURL());
 
         // Find token and check if it is valid
         if (StringUtils.hasText(token) && tokenGenerator.validateToken(token)) {
