@@ -1,30 +1,43 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Routes, Route, Navigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Pencil } from "lucide-react";
 import { useCourses } from "../context/CourseContext";
 import CourseHeader from "../components/CourseHeader";
 import CourseTab from "../components/CourseTab";
 import AssignmentList from "../components/AssignmentList";
 import NotesSection from "../components/NotesSection";
-import DiscussionsSection from "../components/DiscussionsSection";
 import GradeSection from "../components/GradeSection";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
-// Define tabs
+// Define tabs - discussions tab already removed
 const tabs = [
   { id: "overview", label: "Overview" },
   { id: "assignments", label: "Assignments" },
   { id: "notes", label: "Lecture Notes" },
-  { id: "discussions", label: "Discussions" },
   { id: "grades", label: "Grades" },
 ];
 
 const CourseDetails = () => {
   const { courseId, tabId } = useParams<{ courseId: string; tabId: string }>();
   const navigate = useNavigate();
-  const { getCourse, toggleAssignmentStatus, addNote, addDiscussion, addReply } = useCourses();
+  const { getCourse, toggleAssignmentStatus, addNote, updateCourse } = useCourses();
   
   const course = getCourse(courseId || "");
+  const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
+  const [editableCourse, setEditableCourse] = useState<typeof course | null>(null);
+  
+  // Set editable course when original course changes
+  useEffect(() => {
+    if (course) {
+      setEditableCourse(course);
+    }
+  }, [course]);
   
   // Redirect to 404 if course not found
   useEffect(() => {
@@ -37,9 +50,30 @@ const CourseDetails = () => {
     return null;
   }
 
+  // Handle editing a course
+  const handleEditCourse = () => {
+    if (editableCourse) {
+      updateCourse(editableCourse);
+      setIsEditCourseOpen(false);
+      toast.success("Course updated successfully");
+    }
+  };
+
   // Course overview content
   const CourseOverview = () => (
     <div className="space-y-6 animate-fadeIn">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Course Details</h3>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setIsEditCourseOpen(true)}
+        >
+          <Pencil size={16} className="mr-2" />
+          Edit Course
+        </Button>
+      </div>
+
       <div className="glass-card rounded-lg p-6">
         <h3 className="text-lg font-medium mb-4">Course Description</h3>
         <p className="text-sm leading-relaxed">{course.description}</p>
@@ -50,44 +84,90 @@ const CourseDetails = () => {
         <p className="text-sm mb-4"><span className="font-medium">Class Times:</span> {course.schedule}</p>
         <p className="text-sm"><span className="font-medium">Location:</span> Main Campus, Building A, Room 201</p>
       </div>
-      
-      <div className="glass-card rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Course Materials</h3>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3 p-3 rounded-md bg-secondary">
-            <div className="p-2 rounded-md bg-primary/10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-              </svg>
-            </div>
-            <div>
-              <h4 className="font-medium">Introduction to Computer Science: A Comprehensive Guide</h4>
-              <p className="text-xs text-muted-foreground mt-1">Textbook • ISBN: 978-0134670942</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3 p-3 rounded-md bg-secondary">
-            <div className="p-2 rounded-md bg-primary/10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                <rect width="18" height="18" x="3" y="3" rx="2"></rect>
-                <path d="M7 3v18"></path>
-                <path d="M3 7h18"></path>
-              </svg>
-            </div>
-            <div>
-              <h4 className="font-medium">Course Website</h4>
-              <a href="#" className="text-xs text-primary hover:underline mt-1 block">
-                https://university.edu/cs101
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
   return (
     <div className="page-container pb-16 animate-fadeIn">
+      {/* Edit Course Dialog */}
+      <Dialog open={isEditCourseOpen} onOpenChange={setIsEditCourseOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Course</DialogTitle>
+            <DialogDescription>
+              Update course information
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editableCourse && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Course Name</Label>
+                <Input 
+                  id="edit-name" 
+                  value={editableCourse.name}
+                  onChange={(e) => setEditableCourse({ ...editableCourse, name: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-code">Course Code</Label>
+                <Input 
+                  id="edit-code" 
+                  value={editableCourse.code}
+                  onChange={(e) => setEditableCourse({ ...editableCourse, code: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-instructor">Instructor</Label>
+                <Input 
+                  id="edit-instructor" 
+                  value={editableCourse.instructor}
+                  onChange={(e) => setEditableCourse({ ...editableCourse, instructor: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-schedule">Schedule</Label>
+                <Input 
+                  id="edit-schedule" 
+                  value={editableCourse.schedule}
+                  onChange={(e) => setEditableCourse({ ...editableCourse, schedule: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea 
+                  id="edit-description" 
+                  value={editableCourse.description}
+                  onChange={(e) => setEditableCourse({ ...editableCourse, description: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-color">Color</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    id="edit-color" 
+                    type="color" 
+                    value={editableCourse.color || '#6D28D9'}
+                    onChange={(e) => setEditableCourse({ ...editableCourse, color: e.target.value })}
+                    className="w-16 h-10 p-1" 
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditCourseOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditCourse}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Back button */}
       <button
         onClick={() => navigate(-1)}
@@ -117,13 +197,6 @@ const CourseDetails = () => {
           <NotesSection 
             course={course} 
             addNote={(note) => addNote(course.id, note)} 
-          />
-        } />
-        <Route path="/discussions" element={
-          <DiscussionsSection 
-            course={course} 
-            addDiscussion={(discussion) => addDiscussion(course.id, discussion)}
-            addReply={(discussionId, reply) => addReply(course.id, discussionId, reply)}
           />
         } />
         <Route path="/grades" element={<GradeSection course={course} />} />

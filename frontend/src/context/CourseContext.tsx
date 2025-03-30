@@ -9,9 +9,12 @@ type Assignment = {
   dueDate: string;
   isSubmitted: boolean;
   courseName: string;
+  isRecurring: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly';
+  recurrenceEndDate?: string;
 };
 
-type Note = {
+export type Note = {
   id: string;
   title: string;
   content: string;
@@ -19,27 +22,10 @@ type Note = {
   fileUrl?: string;
 };
 
-type Discussion = {
-  id: string;
-  title: string;
-  author: string;
-  date: string;
-  content: string;
-  replies: Reply[];
-};
-
-type Reply = {
-  id: string;
-  author: string;
-  date: string;
-  content: string;
-};
-
 type Grade = {
   id: string;
   title: string;
-  score: number;
-  maxScore: number;
+  percentage: number;
   weight: number;
 };
 
@@ -50,9 +36,9 @@ export type Course = {
   description: string;
   code: string; 
   schedule: string;
+  color?: string;
   assignments: Assignment[];
   notes: Note[];
-  discussions: Discussion[];
   grades: Grade[];
 };
 
@@ -72,7 +58,8 @@ const mockCourses: Course[] = [
         description: "Solve five algorithmic problems using pseudocode.",
         dueDate: "2023-10-15T23:59:59",
         isSubmitted: false,
-        courseName: "Introduction to Computer Science"
+        courseName: "Introduction to Computer Science",
+        isRecurring: false
       },
       {
         id: "a2",
@@ -80,7 +67,8 @@ const mockCourses: Course[] = [
         description: "Create a simple program that demonstrates variables, loops, and conditionals.",
         dueDate: "2023-10-22T23:59:59",
         isSubmitted: true,
-        courseName: "Introduction to Computer Science"
+        courseName: "Introduction to Computer Science",
+        isRecurring: false
       }
     ],
     notes: [
@@ -99,36 +87,17 @@ const mockCourses: Course[] = [
         fileUrl: "#"
       }
     ],
-    discussions: [
-      {
-        id: "d1",
-        title: "Confusion about recursion",
-        author: "Student Name",
-        date: "2023-09-10T14:25:00",
-        content: "I'm having trouble understanding the concept of recursion...",
-        replies: [
-          {
-            id: "r1",
-            author: "Dr. Alex Johnson",
-            date: "2023-09-10T16:40:00",
-            content: "Recursion is a function calling itself. Think of it like..."
-          }
-        ]
-      }
-    ],
     grades: [
       {
         id: "g1",
         title: "Quiz 1",
-        score: 18,
-        maxScore: 20,
+        percentage: 90,
         weight: 10
       },
       {
         id: "g2",
         title: "Midterm",
-        score: 85,
-        maxScore: 100,
+        percentage: 85,
         weight: 30
       }
     ]
@@ -147,7 +116,8 @@ const mockCourses: Course[] = [
         description: "Implement a doubly linked list with various operations.",
         dueDate: "2023-10-18T23:59:59",
         isSubmitted: false,
-        courseName: "Data Structures and Algorithms"
+        courseName: "Data Structures and Algorithms",
+        isRecurring: false
       }
     ],
     notes: [
@@ -159,22 +129,11 @@ const mockCourses: Course[] = [
         fileUrl: "#"
       }
     ],
-    discussions: [
-      {
-        id: "d2",
-        title: "Big O notation question",
-        author: "Another Student",
-        date: "2023-09-12T11:05:00",
-        content: "Can someone explain the difference between O(n) and O(n log n)?",
-        replies: []
-      }
-    ],
     grades: [
       {
         id: "g3",
         title: "Assignment 1",
-        score: 92,
-        maxScore: 100,
+        percentage: 92,
         weight: 15
       }
     ]
@@ -193,7 +152,8 @@ const mockCourses: Course[] = [
         description: "Create an ER diagram for a university database system.",
         dueDate: "2023-10-20T23:59:59",
         isSubmitted: false,
-        courseName: "Database Systems"
+        courseName: "Database Systems",
+        isRecurring: false
       }
     ],
     notes: [
@@ -205,13 +165,11 @@ const mockCourses: Course[] = [
         fileUrl: "#"
       }
     ],
-    discussions: [],
     grades: [
       {
         id: "g4",
         title: "Quiz 1",
-        score: 15,
-        maxScore: 15,
+        percentage: 100,
         weight: 5
       }
     ]
@@ -230,11 +188,11 @@ const mockCourses: Course[] = [
         description: "Create a responsive personal portfolio using HTML, CSS, and JavaScript.",
         dueDate: "2023-10-25T23:59:59",
         isSubmitted: false,
-        courseName: "Web Development"
+        courseName: "Web Development",
+        isRecurring: false
       }
     ],
     notes: [],
-    discussions: [],
     grades: []
   },
   {
@@ -246,7 +204,6 @@ const mockCourses: Course[] = [
     schedule: "Wed/Fri 3:30 PM - 5:00 PM",
     assignments: [],
     notes: [],
-    discussions: [],
     grades: []
   },
   {
@@ -258,7 +215,6 @@ const mockCourses: Course[] = [
     schedule: "Mon/Wed 1:00 PM - 2:30 PM",
     assignments: [],
     notes: [],
-    discussions: [],
     grades: []
   }
 ];
@@ -268,12 +224,20 @@ type CourseContextType = {
   courses: Course[];
   assignments: Assignment[];
   getCourse: (id: string) => Course | undefined;
-  addAssignment: (courseId: string, assignment: Omit<Assignment, "id" | "courseName">) => void;
+  addAssignment: (courseId: string, assignment: Omit<Assignment, "id" | "courseName" | "isRecurring" | "recurrencePattern" | "recurrenceEndDate"> & { isRecurring?: boolean, recurrencePattern?: 'daily' | 'weekly' | 'monthly', recurrenceEndDate?: string }) => void;
   updateAssignment: (assignment: Assignment) => void;
   toggleAssignmentStatus: (assignmentId: string) => void;
   addNote: (courseId: string, note: Omit<Note, "id" | "dateAdded">) => void;
-  addDiscussion: (courseId: string, discussion: Omit<Discussion, "id" | "date" | "replies">) => void;
-  addReply: (courseId: string, discussionId: string, reply: Omit<Reply, "id" | "date">) => void;
+  addCourse: (course: Omit<Course, "id" | "assignments" | "notes" | "grades">) => void;
+  addGrade: (courseId: string, grade: Omit<Grade, "id" | "maxScore">) => void;
+  // New functions for editing and removing items
+  deleteCourse: (courseId: string) => void;
+  updateCourse: (updatedCourse: Course) => void;
+  deleteAssignment: (assignmentId: string) => void;
+  deleteNote: (courseId: string, noteId: string) => void;
+  updateNote: (courseId: string, updatedNote: Note) => void;
+  deleteGrade: (courseId: string, gradeId: string) => void;
+  updateGrade: (courseId: string, updatedGrade: Grade) => void;
 };
 
 // Create context
@@ -297,7 +261,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Add a new assignment to a course
-  const addAssignment = (courseId: string, assignment: Omit<Assignment, "id" | "courseName">) => {
+  const addAssignment = (courseId: string, assignment: Omit<Assignment, "id" | "courseName" | "isRecurring" | "recurrencePattern" | "recurrenceEndDate"> & { isRecurring?: boolean, recurrencePattern?: 'daily' | 'weekly' | 'monthly', recurrenceEndDate?: string }) => {
+    const { isRecurring = false, recurrencePattern, recurrenceEndDate, ...restAssignment } = assignment;
+    
     setCourses(prevCourses => 
       prevCourses.map(course => 
         course.id === courseId
@@ -306,9 +272,12 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
               assignments: [
                 ...course.assignments,
                 {
-                  ...assignment,
+                  ...restAssignment,
                   id: `a${Date.now()}`,
-                  courseName: course.name
+                  courseName: course.name,
+                  isRecurring,
+                  recurrencePattern,
+                  recurrenceEndDate
                 }
               ]
             }
@@ -326,6 +295,18 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           assignment.id === updatedAssignment.id
             ? updatedAssignment
             : assignment
+        )
+      }))
+    );
+  };
+
+  // Delete an assignment
+  const deleteAssignment = (assignmentId: string) => {
+    setCourses(prevCourses => 
+      prevCourses.map(course => ({
+        ...course,
+        assignments: course.assignments.filter(assignment => 
+          assignment.id !== assignmentId
         )
       }))
     );
@@ -366,20 +347,78 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  // Add a new discussion to a course
-  const addDiscussion = (courseId: string, discussion: Omit<Discussion, "id" | "date" | "replies">) => {
+  // Delete a note
+  const deleteNote = (courseId: string, noteId: string) => {
     setCourses(prevCourses => 
       prevCourses.map(course => 
         course.id === courseId
           ? {
               ...course,
-              discussions: [
-                ...course.discussions,
+              notes: course.notes.filter(note => note.id !== noteId)
+            }
+          : course
+      )
+    );
+  };
+
+  // Update a note
+  const updateNote = (courseId: string, updatedNote: Note) => {
+    setCourses(prevCourses => 
+      prevCourses.map(course => 
+        course.id === courseId
+          ? {
+              ...course,
+              notes: course.notes.map(note => 
+                note.id === updatedNote.id ? updatedNote : note
+              )
+            }
+          : course
+      )
+    );
+  };
+
+  // Add a new course
+  const addCourse = (courseData: Omit<Course, "id" | "assignments" | "notes" | "grades">) => {
+    const newCourse: Course = {
+      ...courseData,
+      id: `c${Date.now()}`,
+      assignments: [],
+      notes: [],
+      grades: []
+    };
+    
+    setCourses(prevCourses => [...prevCourses, newCourse]);
+  };
+
+  // Delete a course
+  const deleteCourse = (courseId: string) => {
+    setCourses(prevCourses => 
+      prevCourses.filter(course => course.id !== courseId)
+    );
+  };
+
+  // Update a course
+  const updateCourse = (updatedCourse: Course) => {
+    setCourses(prevCourses => 
+      prevCourses.map(course => 
+        course.id === updatedCourse.id ? updatedCourse : course
+      )
+    );
+  };
+
+  // Add a new grade to a course (maxScore is now fixed at 100)
+  const addGrade = (courseId: string, grade: Omit<Grade, "id" | "maxScore">) => {
+    setCourses(prevCourses => 
+      prevCourses.map(course => 
+        course.id === courseId
+          ? {
+              ...course,
+              grades: [
+                ...course.grades,
                 {
-                  ...discussion,
-                  id: `d${Date.now()}`,
-                  date: new Date().toISOString(),
-                  replies: []
+                  ...grade,
+                  id: `g${Date.now()}`,
+                  maxScore: 100
                 }
               ]
             }
@@ -388,27 +427,29 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  // Add a reply to a discussion
-  const addReply = (courseId: string, discussionId: string, reply: Omit<Reply, "id" | "date">) => {
+  // Delete a grade
+  const deleteGrade = (courseId: string, gradeId: string) => {
     setCourses(prevCourses => 
       prevCourses.map(course => 
         course.id === courseId
           ? {
               ...course,
-              discussions: course.discussions.map(discussion => 
-                discussion.id === discussionId
-                  ? {
-                      ...discussion,
-                      replies: [
-                        ...discussion.replies,
-                        {
-                          ...reply,
-                          id: `r${Date.now()}`,
-                          date: new Date().toISOString()
-                        }
-                      ]
-                    }
-                  : discussion
+              grades: course.grades.filter(grade => grade.id !== gradeId)
+            }
+          : course
+      )
+    );
+  };
+
+  // Update a grade
+  const updateGrade = (courseId: string, updatedGrade: Grade) => {
+    setCourses(prevCourses => 
+      prevCourses.map(course => 
+        course.id === courseId
+          ? {
+              ...course,
+              grades: course.grades.map(grade => 
+                grade.id === updatedGrade.id ? updatedGrade : grade
               )
             }
           : course
@@ -422,10 +463,17 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     getCourse,
     addAssignment,
     updateAssignment,
+    deleteAssignment,
     toggleAssignmentStatus,
     addNote,
-    addDiscussion,
-    addReply
+    deleteNote,
+    updateNote,
+    addCourse,
+    deleteCourse,
+    updateCourse,
+    addGrade,
+    deleteGrade,
+    updateGrade
   };
 
   return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>;

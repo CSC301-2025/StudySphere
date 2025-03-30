@@ -10,9 +10,9 @@ import {
   LayoutDashboard, 
   Settings, 
   X, 
-  Folder,
   BookMarked,
-  GraduationCap
+  GraduationCap,
+  Users
 } from "lucide-react";
 import { useCourses } from "../context/CourseContext";
 
@@ -106,6 +106,13 @@ const Sidebar = ({ isOpen, closeSidebar }: SidebarProps) => {
                     <FileText size={18} />
                     <span>Notes</span>
                   </Link>
+                  <Link 
+                    to="/tutors" 
+                    className={`sidebar-link ${isActive("/tutors") ? "active" : ""}`}
+                  >
+                    <Users size={18} />
+                    <span>Tutors</span>
+                  </Link>
                 </div>
               </div>
               
@@ -148,13 +155,6 @@ const Sidebar = ({ isOpen, closeSidebar }: SidebarProps) => {
                   >
                     <Clock size={18} />
                     <span>Upcoming Due</span>
-                  </Link>
-                  <Link 
-                    to="/resources"
-                    className="sidebar-link"
-                  >
-                    <Folder size={18} />
-                    <span>Resources</span>
                   </Link>
                 </div>
               </div>

@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { 
   BookOpen, 
@@ -8,9 +7,9 @@ import {
   Clock, 
   LayoutDashboard, 
   Settings, 
-  Folder,
   BookMarked,
-  GraduationCap
+  GraduationCap,
+  Users
 } from "lucide-react";
 import { useCourses } from "../context/CourseContext";
 import {
@@ -75,25 +74,12 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
-                  isActive={isActive("/sections")}
-                  tooltip="Sections"
+                  isActive={isActive("/courses")}
+                  tooltip="Courses"
                 >
-                  <Link to="/sections">
+                  <Link to="/courses">
                     <BookOpen size={18} />
-                    <span>Sections</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive("/assignments")}
-                  tooltip="Assignments"
-                >
-                  <Link to="/assignments">
-                    <ClipboardList size={18} />
-                    <span>Assignments</span>
+                    <span>Courses</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -114,12 +100,12 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
-                  isActive={isActive("/notes")}
-                  tooltip="Notes"
+                  isActive={isActive("/tutors")}
+                  tooltip="Tutors"
                 >
-                  <Link to="/notes">
-                    <FileText size={18} />
-                    <span>Notes</span>
+                  <Link to="/tutors">
+                    <Users size={18} />
+                    <span>Tutors</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -127,9 +113,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Current Sections */}
+        {/* Current Courses */}
         <SidebarGroup>
-          <SidebarGroupLabel>Current Sections</SidebarGroupLabel>
+          <SidebarGroupLabel>Current Courses</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {courses.slice(0, 4).map((course) => (
@@ -150,10 +136,10 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    tooltip="View all sections"
+                    tooltip="View all courses"
                   >
-                    <Link to="/sections" className="text-sidebar-foreground/70">
-                      <span className="text-xs">View all sections...</span>
+                    <Link to="/courses" className="text-sidebar-foreground/70">
+                      <span className="text-xs">View all courses...</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -179,19 +165,6 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive("/resources")}
-                  tooltip="Resources"
-                >
-                  <Link to="/resources">
-                    <Folder size={18} />
-                    <span>Resources</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -201,6 +174,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <SidebarMenuButton 
           asChild 
+          isActive={isActive("/settings")}
           tooltip="Settings"
         >
           <Link to="/settings">

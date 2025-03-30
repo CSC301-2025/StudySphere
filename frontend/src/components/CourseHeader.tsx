@@ -1,13 +1,17 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Clock, Calendar, Users } from "lucide-react";
 import { Course } from "../context/CourseContext";
+import TextToSpeech from "./TextToSpeech";
+import AddReminderDialog from "./AddReminderDialog";
 
 type CourseHeaderProps = {
   course: Course;
 };
 
 const CourseHeader = ({ course }: CourseHeaderProps) => {
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+  
   // Count upcoming assignments
   const upcomingAssignments = course.assignments.filter(
     (assignment) => !assignment.isSubmitted && new Date(assignment.dueDate) > new Date()
@@ -18,7 +22,7 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
     if (course.grades.length === 0) return null;
     
     const totalWeightedScore = course.grades.reduce((acc, grade) => {
-      const percentage = (grade.score / grade.maxScore) * 100;
+      const percentage = grade.percentage
       return acc + percentage * (grade.weight / 100);
     }, 0);
     
@@ -30,6 +34,18 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
   };
   
   const overallGrade = calculateOverallGrade();
+  
+  // Get letter grade based on percentage
+  const getLetterGrade = (percentage: number) => {
+    if (percentage >= 90) return "A";
+    if (percentage >= 80) return "B";
+    if (percentage >= 70) return "C";
+    if (percentage >= 60) return "D";
+    return "F";
+  };
+
+  // Generate content for text-to-speech
+  const speechContent = `Course: ${course.name}. ${course.description}. Instructor: ${course.instructor}. Schedule: ${course.schedule}. ${upcomingAssignments.length > 0 ? `You have ${upcomingAssignments.length} upcoming ${upcomingAssignments.length === 1 ? 'assignment' : 'assignments'}.` : 'No upcoming assignments.'} ${overallGrade !== null ? `Your current grade is ${overallGrade.toFixed(1)} percent, which is a ${getLetterGrade(overallGrade)}.` : ''}`;
 
   return (
     <div className="glass-card rounded-xl p-6 mb-6 animate-fadeIn">
@@ -41,9 +57,13 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
             </span>
             {overallGrade !== null && (
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-secondary text-secondary-foreground">
-                Grade: {overallGrade.toFixed(1)}%
+                Grade: {overallGrade.toFixed(1)}% ({getLetterGrade(overallGrade)})
               </span>
             )}
+            <TextToSpeech 
+              text={speechContent} 
+              tooltipText="Listen to course details"
+            />
           </div>
           
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{course.name}</h1>
@@ -63,16 +83,14 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
                 {upcomingAssignments.length} upcoming {upcomingAssignments.length === 1 ? "assignment" : "assignments"}
               </span>
             </div>
-            
-            <div className="flex items-center gap-2 text-sm">
-              <Users size={16} className="text-primary" />
-              <span>25 students</span>
-            </div>
           </div>
         </div>
         
         <div className="flex flex-row md:flex-col gap-2 mt-2 md:mt-0">
-          <button className="btn-primary">
+          <button 
+            className="btn-primary"
+            onClick={() => setIsReminderOpen(true)}
+          >
             Add Reminder
           </button>
           <button className="btn-outline">
@@ -80,6 +98,12 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
           </button>
         </div>
       </div>
+      
+      <AddReminderDialog 
+        open={isReminderOpen}
+        onOpenChange={setIsReminderOpen}
+        course={course}
+      />
     </div>
   );
 };

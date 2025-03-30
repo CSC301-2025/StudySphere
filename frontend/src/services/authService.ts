@@ -19,36 +19,61 @@ async function fetchApi<T>(
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-  });
 
-  // Check if the response is successful
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Something went wrong");
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    // Check if the response is successful
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `HTTP error! Status: ${response.status}` }));
+      console.error(`API request failed: ${endpoint}`, errorData);
+      throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`API request failed: ${endpoint}`, error);
+    throw error;
   }
-
-  return response.json();
 }
+
+// MOCK DATA for demonstration purposes
+const MOCK_USER: User = {
+  id: "1",
+  firstName: "John",
+  lastName: "Doe",
+  email: "john.doe@example.com",
+  phoneNumber: "555-123-4567",
+  recoveryEmail: "recovery@example.com",
+  roles: [{ id: "1", name: "Student" }]
+};
+
+const MOCK_TOKEN = "mock-jwt-token";
+const MOCK_REFRESH = "mock-refresh-token";
 
 export const authService = {
   // Login user
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      const response = await fetchApi<{ success: boolean; message: string; data: AuthResponse }>(
-        "/login",
-        "POST",
-        credentials
-      );
+      // For demonstration, return mock data instead of making an API call
+      console.log("Mock login with:", credentials);
       
       // Store tokens in localStorage
-      localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("refreshToken", response.data.refreshToken);
+      localStorage.setItem("accessToken", MOCK_TOKEN);
+      localStorage.setItem("refreshToken", MOCK_REFRESH);
       
-      return response.data;
+      const mockResponse: AuthResponse = {
+        accessToken: MOCK_TOKEN,
+        refreshToken: MOCK_REFRESH,
+        userDto: MOCK_USER,
+        message: "Login successful"
+      };
+      
+      return mockResponse;
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -58,11 +83,11 @@ export const authService = {
   // Register new user
   register: async (userData: RegisterData): Promise<void> => {
     try {
-      await fetchApi<{ success: boolean; message: string }>(
-        "/register",
-        "POST",
-        userData
-      );
+      // For demonstration, just log the registration attempt
+      console.log("Mock register with:", userData);
+      
+      // In a real app, you would call the API here
+      // await fetchApi<{ success: boolean; message: string }>("/register", "POST", userData);
     } catch (error) {
       console.error("Registration error:", error);
       throw error;
@@ -88,20 +113,20 @@ export const authService = {
         refreshToken,
       };
 
-      const response = await fetchApi<{ success: boolean; message: string; data: AuthResponse }>(
-        "/refresh",
-        "POST",
-        tokenData
-      );
+      // For demonstration, return mock data instead of making an API call
+      console.log("Mock token refresh with:", tokenData);
       
-      // Update tokens in localStorage
-      localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("refreshToken", response.data.refreshToken);
+      const mockResponse: AuthResponse = {
+        accessToken: MOCK_TOKEN,
+        refreshToken: MOCK_REFRESH,
+        userDto: MOCK_USER,
+        message: "Token refresh successful"
+      };
       
-      return response.data;
+      return mockResponse;
     } catch (error) {
       // If refresh fails, logout the user
-      this.logout();
+      authService.logout();
       console.error("Token refresh error:", error);
       throw error;
     }
@@ -110,10 +135,9 @@ export const authService = {
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
     try {
-      const response = await fetchApi<{ success: boolean; message: string; data: User }>(
-        "/me"
-      );
-      return response.data;
+      // For demonstration, return mock user data
+      console.log("Getting current user from mock data");
+      return MOCK_USER;
     } catch (error) {
       console.error("Get current user error:", error);
       throw error;
@@ -125,4 +149,3 @@ export const authService = {
     return !!localStorage.getItem("accessToken");
   },
 };
-

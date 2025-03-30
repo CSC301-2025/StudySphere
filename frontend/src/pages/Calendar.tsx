@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2, BookOpen, Clock } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,27 +9,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, isSameDay, isToday, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useCourses } from '@/context/CourseContext';
+import { toast } from "sonner";
+import { DayContent, DayContentProps } from 'react-day-picker';
 
 type Event = {
   id: string;
   title: string;
   description: string;
   date: Date;
-  type: 'assignment' | 'exam' | 'reminder' | 'other';
+  type: 'assignment' | 'lecture' | 'reminder' | 'other';
+  courseId?: string;
+  courseName?: string;
+  color?: string;
 };
 
-interface CalendarDayProps {
-  day: Date;
-  displayMonth?: Date;
-  isSelected: boolean;
-  isToday: boolean;
-  onClick?: () => void;
-  events: Event[];
-}
-
 const CalendarPage = () => {
+  const { courses, assignments } = useCourses();
   const [date, setDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
@@ -39,35 +38,64 @@ const CalendarPage = () => {
     date: new Date(),
     type: 'reminder',
   });
-
-  // Create sample events with current year dates to avoid invalid dates
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
   
-  // Sample events (in real app, these would come from a database or API)
-  const [events, setEvents] = useState<Event[]>([
+  // Generate events from course assignments and lectures (notes)
+  const generateEvents = (): Event[] => {
+    const events: Event[] = [];
+    
+    // Add assignments
+    courses.forEach(course => {
+      course.assignments.forEach(assignment => {
+        events.push({
+          id: `assignment-${assignment.id}`,
+          title: assignment.title,
+          description: assignment.description,
+          date: new Date(assignment.dueDate),
+          type: 'assignment',
+          courseId: course.id,
+          courseName: course.name,
+          color: course.color
+        });
+      });
+      
+      // Add lectures (notes)
+      course.notes.forEach(note => {
+        events.push({
+          id: `lecture-${note.id}`,
+          title: note.title,
+          description: note.content,
+          date: new Date(note.dateAdded),
+          type: 'lecture',
+          courseId: course.id,
+          courseName: course.name,
+          color: course.color
+        });
+      });
+    });
+    
+    return events;
+  };
+  
+  // Sample reminder events (in a real app, these would be user-created)
+  const [manualEvents, setManualEvents] = useState<Event[]>([
     {
       id: '1',
-      title: 'Complete Math Assignment',
-      description: 'Finish the calculus problems from chapter 5',
-      date: new Date(currentYear, currentMonth, 15),
-      type: 'assignment',
+      title: 'Study Session',
+      description: 'Review materials for upcoming midterm',
+      date: new Date(new Date().getFullYear(), new Date().getMonth(), 15),
+      type: 'reminder',
     },
     {
       id: '2',
-      title: 'Physics Exam',
-      description: 'Midterm exam covering chapters 1-4',
-      date: new Date(currentYear, currentMonth, 20),
-      type: 'exam',
-    },
-    {
-      id: '3',
-      title: 'Group Project Meeting',
-      description: 'Meet with team to discuss project timeline',
-      date: new Date(currentYear, currentMonth, 18),
-      type: 'reminder',
+      title: 'Office Hours',
+      description: 'Professor Wilson office hours',
+      date: new Date(new Date().getFullYear(), new Date().getMonth(), 20),
+      type: 'other',
     },
   ]);
+  
+  // Combine all events
+  const events = [...generateEvents(), ...manualEvents];
 
   // Create a mapping of events by date for easy lookup
   const eventsByDate: Record<string, Event[]> = {};
@@ -79,43 +107,49 @@ const CalendarPage = () => {
     eventsByDate[dateKey].push(event);
   });
 
-  // Custom day renderer for the calendar
-  const CalendarDay = ({ day, displayMonth, isSelected, isToday, onClick }: CalendarDayProps) => {
-    if (!day || !(day instanceof Date) || isNaN(day.getTime())) {
-      return null; // Skip rendering if day is invalid
+  // Custom day renderer component
+  const CustomDayContent = (props: DayContentProps) => {
+    const { date: dayDate, ...rest } = props;
+    
+    if (!dayDate || !(dayDate instanceof Date) || isNaN(dayDate.getTime())) {
+      return <DayContent {...props} />;
     }
     
+    const isCurrentDay = isToday(dayDate);
+    const isSelected = isSameDay(dayDate, selectedDate);
+    
     // Get events for this day
-    const dayKey = format(day, 'yyyy-MM-dd');
+    const dayKey = format(dayDate, 'yyyy-MM-dd');
     const dayEvents = eventsByDate[dayKey] || [];
     const hasEvents = dayEvents.length > 0;
     
     return (
       <div
-        onClick={onClick}
         className={cn(
-          "relative flex h-9 w-9 items-center justify-center p-0 font-normal aria-selected:opacity-100",
-          isToday && "bg-accent text-accent-foreground font-semibold",
-          isSelected && "bg-primary text-primary-foreground",
-          hasEvents && !isSelected && !isToday && "bg-secondary/50",
+          "relative h-full w-full flex flex-col items-center justify-center",
           hasEvents && "font-semibold"
         )}
+        onClick={() => setSelectedDate(dayDate)}
       >
-        {day.getDate()}
+        <DayContent {...props} />
+        
         {hasEvents && (
-          <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">
+          <div className="absolute bottom-0 flex gap-0.5">
             {dayEvents.slice(0, 3).map((event, i) => (
               <div
                 key={i}
                 className={cn(
                   "h-1 w-1 rounded-full",
                   event.type === 'assignment' && "bg-red-500",
-                  event.type === 'exam' && "bg-yellow-500",
+                  event.type === 'lecture' && "bg-green-500",
                   event.type === 'reminder' && "bg-blue-500",
-                  event.type === 'other' && "bg-green-500",
+                  event.type === 'other' && "bg-yellow-500",
                 )}
               />
             ))}
+            {dayEvents.length > 3 && (
+              <div className="h-1 w-1 rounded-full bg-gray-500" />
+            )}
           </div>
         )}
       </div>
@@ -127,19 +161,33 @@ const CalendarPage = () => {
   const selectedDateEvents = eventsByDate[selectedDateKey] || [];
 
   const handleAddEvent = () => {
+    if (!newEvent.title.trim()) {
+      toast.error("Event title is required");
+      return;
+    }
+    
     const event: Event = {
       ...newEvent,
       id: crypto.randomUUID(),
       date: selectedDate,
     };
     
-    setEvents([...events, event]);
+    setManualEvents([...manualEvents, event]);
     setNewEvent({ title: '', description: '', date: new Date(), type: 'reminder' });
     setIsAddEventOpen(false);
+    toast.success("Event added successfully");
   };
 
   const handleDeleteEvent = (eventId: string) => {
-    setEvents(events.filter(event => event.id !== eventId));
+    // Only delete manually added events
+    if (eventId.startsWith('assignment-') || eventId.startsWith('lecture-')) {
+      // This is a course-related event, we don't delete these directly
+      toast.error("Course events cannot be deleted here");
+      return;
+    }
+    
+    setManualEvents(manualEvents.filter(event => event.id !== eventId));
+    toast.success("Event deleted successfully");
   };
 
   return (
@@ -175,8 +223,10 @@ const CalendarPage = () => {
                 onSelect={(day) => day && setSelectedDate(day)}
                 className="rounded-md border mx-auto"
                 components={{
-                  Day: CalendarDay as any
+                  DayContent: CustomDayContent
                 }}
+                showOutsideDays={true}
+                fixedWeeks={true}
               />
               <div className="mt-4 flex flex-wrap gap-2">
                 <div className="flex items-center">
@@ -184,15 +234,15 @@ const CalendarPage = () => {
                   <span className="text-xs">Assignment</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="mr-1 h-3 w-3 rounded-full bg-yellow-500" />
-                  <span className="text-xs">Exam</span>
+                  <div className="mr-1 h-3 w-3 rounded-full bg-green-500" />
+                  <span className="text-xs">Lecture</span>
                 </div>
                 <div className="flex items-center">
                   <div className="mr-1 h-3 w-3 rounded-full bg-blue-500" />
                   <span className="text-xs">Reminder</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="mr-1 h-3 w-3 rounded-full bg-green-500" />
+                  <div className="mr-1 h-3 w-3 rounded-full bg-yellow-500" />
                   <span className="text-xs">Other</span>
                 </div>
               </div>
@@ -246,17 +296,18 @@ const CalendarPage = () => {
                     
                     <div className="grid gap-2">
                       <Label htmlFor="type">Event Type</Label>
-                      <select
-                        id="type"
+                      <Select
                         value={newEvent.type}
-                        onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        onValueChange={(value: 'reminder' | 'other') => setNewEvent({ ...newEvent, type: value })}
                       >
-                        <option value="assignment">Assignment</option>
-                        <option value="exam">Exam</option>
-                        <option value="reminder">Reminder</option>
-                        <option value="other">Other</option>
-                      </select>
+                        <SelectTrigger id="type">
+                          <SelectValue placeholder="Select event type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="reminder">Reminder</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   
@@ -285,26 +336,43 @@ const CalendarPage = () => {
                             variant="outline" 
                             className={cn(
                               event.type === 'assignment' && "bg-red-500/10 text-red-500 border-red-500/20",
-                              event.type === 'exam' && "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+                              event.type === 'lecture' && "bg-green-500/10 text-green-500 border-green-500/20",
                               event.type === 'reminder' && "bg-blue-500/10 text-blue-500 border-blue-500/20",
-                              event.type === 'other' && "bg-green-500/10 text-green-500 border-green-500/20",
+                              event.type === 'other' && "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
                             )}
                           >
                             {event.type}
                           </Badge>
                         </div>
+                        {event.courseName && (
+                          <p className="text-xs text-primary mt-1">
+                            {event.courseName}
+                          </p>
+                        )}
                         <p className="mt-1 text-sm text-muted-foreground">
                           {event.description}
                         </p>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteEvent(event.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center">
+                        {event.type === 'assignment' || event.type === 'lecture' ? (
+                          <div className="h-8 w-8 flex items-center justify-center">
+                            {event.type === 'assignment' ? (
+                              <Clock className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <BookOpen className="h-4 w-4 text-green-500" />
+                            )}
+                          </div>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteEvent(event.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

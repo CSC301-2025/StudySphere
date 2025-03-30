@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, BookOpen, Clock } from "lucide-react";
 import { type Course } from "../context/CourseContext";
+import TextToSpeech from "./TextToSpeech";
 
 type CourseCardProps = {
   course: Course;
@@ -37,6 +38,9 @@ const CourseCard = ({ course }: CourseCardProps) => {
     }
   };
 
+  // Generate simpler content for text-to-speech - just the course name
+  const speechContent = `Course: ${course.name}`;
+
   return (
     <Link 
       to={`/course/${course.id}`} 
@@ -48,7 +52,14 @@ const CourseCard = ({ course }: CourseCardProps) => {
             <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">
               {course.code}
             </span>
-            <ChevronRight size={18} className="text-muted-foreground" />
+            <div className="flex items-center">
+              <TextToSpeech 
+                text={speechContent} 
+                tooltipText="Listen to course name"
+                preventNavigation={true}
+              />
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </div>
           </div>
           
           <h3 className="text-lg font-medium mt-2 mb-1">{course.name}</h3>

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,6 +45,102 @@
     --sidebar-ring: 270 70% 60%;
   }
 
+  /* Blue Theme */
+  :root.theme-blue {
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 210 50% 95%;
+    --secondary-foreground: 210 50% 30%;
+    
+    --muted: 210 30% 95%;
+    --muted-foreground: 210 3.8% 46.1%;
+    
+    --accent: 210 100% 50%;
+    --accent-foreground: 0 0% 98%;
+    
+    --ring: 210 100% 50%;
+
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 50% 95%;
+    --sidebar-accent-foreground: 210 50% 30%;
+    --sidebar-border: 210 50% 90%;
+    --sidebar-ring: 210 100% 50%;
+  }
+
+  /* Green Theme */
+  :root.theme-green {
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 142 30% 95%;
+    --secondary-foreground: 142 30% 30%;
+    
+    --muted: 142 20% 95%;
+    --muted-foreground: 142 3.8% 46.1%;
+    
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 98%;
+    
+    --ring: 142 76% 36%;
+
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 142 30% 95%;
+    --sidebar-accent-foreground: 142 30% 30%;
+    --sidebar-border: 142 30% 90%;
+    --sidebar-ring: 142 76% 36%;
+  }
+
+  /* Orange Theme */
+  :root.theme-orange {
+    --primary: 24 95% 54%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 24 50% 95%;
+    --secondary-foreground: 24 50% 30%;
+    
+    --muted: 24 30% 95%;
+    --muted-foreground: 24 3.8% 46.1%;
+    
+    --accent: 24 95% 54%;
+    --accent-foreground: 0 0% 98%;
+    
+    --ring: 24 95% 54%;
+
+    --sidebar-primary: 24 95% 54%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 24 50% 95%;
+    --sidebar-accent-foreground: 24 50% 30%;
+    --sidebar-border: 24 50% 90%;
+    --sidebar-ring: 24 95% 54%;
+  }
+
+  /* Grayscale Mode */
+  :root.grayscale {
+    --primary: 0 0% 40%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 20%;
+    
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 0 0% 40%;
+    --accent-foreground: 0 0% 98%;
+    
+    --ring: 0 0% 40%;
+
+    --sidebar-primary: 0 0% 40%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 40%;
+  }
+
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -82,6 +179,30 @@
     --sidebar-border: 270 30% 15%;
     --sidebar-ring: 270 70% 60%;
   }
+
+  /* Dark Grayscale Mode */
+  .dark.grayscale {
+    --primary: 0 0% 70%;
+    --primary-foreground: 0 0% 5%;
+    
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    
+    --accent: 0 0% 70%;
+    --accent-foreground: 0 0% 5%;
+    
+    --ring: 0 0% 70%;
+
+    --sidebar-primary: 0 0% 70%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 70%;
+  }
 }
 
 @layer base {
@@ -113,6 +234,23 @@
 }
 
 @layer components {
+  /* Color theme preview circles */
+  .theme-default-preview {
+    @apply bg-[hsl(270,70%,60%)];
+  }
+  
+  .theme-blue-preview {
+    @apply bg-[hsl(210,100%,50%)];
+  }
+  
+  .theme-green-preview {
+    @apply bg-[hsl(142,76%,36%)];
+  }
+  
+  .theme-orange-preview {
+    @apply bg-[hsl(24,95%,54%)];
+  }
+
   .glass-card {
     @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-sm;
   }
@@ -216,4 +354,14 @@
 .page-exit-active {
   opacity: 0;
   transition: opacity 300ms;
+}
+
+/* Additional grayscale styling */
+.grayscale * {
+  transition: filter 0.3s ease-in-out;
+}
+
+html.grayscale img, 
+html.grayscale svg {
+  filter: grayscale(100%);
 }
