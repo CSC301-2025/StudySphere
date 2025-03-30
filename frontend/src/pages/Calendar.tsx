@@ -15,22 +15,44 @@ import { cn } from '@/lib/utils';
 import { useCourses } from '@/context/CourseContext';
 import { toast } from "sonner";
 import { DayContent, DayContentProps } from 'react-day-picker';
+import axiosClient from "@/lib/axiosClient";
+
+type EventType = 'assignment' | 'lecture' | 'reminder' | 'other';
 
 type Event = {
   id: string;
   title: string;
   description: string;
   date: Date;
-  type: 'assignment' | 'lecture' | 'reminder' | 'other';
+  type: EventType;
   courseId?: string;
   courseName?: string;
   color?: string;
 };
 
+/** 
+ * Convert the backend CalendarEvent object to our front-end Event type.
+ * - `eventDate` is a string or ISO date from the backend, 
+ *   so we parse it into a real JavaScript Date.
+ */
+function fromBackendEvent(backendEvent: any): Event {
+  return {
+    id: backendEvent.id,
+    title: backendEvent.title,
+    description: backendEvent.description,
+    date: new Date(backendEvent.eventDate),  // parse ISO string
+    type: 'reminder',  // default or map from your backend if needed
+  };
+}
+
 const CalendarPage = () => {
-  const { courses, assignments } = useCourses();
+  const { courses } = useCourses();
+
+  // Keep track of the currently selected month & day in the calendar:
   const [date, setDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // For adding a new event via Dialog:
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [newEvent, setNewEvent] = useState<Omit<Event, 'id'>>({
     title: '',
@@ -38,45 +60,11 @@ const CalendarPage = () => {
     date: new Date(),
     type: 'reminder',
   });
-  
-  // Generate events from course assignments and lectures (notes)
-  const generateEvents = (): Event[] => {
-    const events: Event[] = [];
-    
-    // Add assignments
-    courses.forEach(course => {
-      course.assignments.forEach(assignment => {
-        events.push({
-          id: `assignment-${assignment.id}`,
-          title: assignment.title,
-          description: assignment.description,
-          date: new Date(assignment.dueDate),
-          type: 'assignment',
-          courseId: course.id,
-          courseName: course.name,
-          color: course.color
-        });
-      });
-      
-      // Add lectures (notes)
-      course.notes.forEach(note => {
-        events.push({
-          id: `lecture-${note.id}`,
-          title: note.title,
-          description: note.content,
-          date: new Date(note.dateAdded),
-          type: 'lecture',
-          courseId: course.id,
-          courseName: course.name,
-          color: course.color
-        });
-      });
-    });
-    
-    return events;
-  };
-  
-  // Sample reminder events (in a real app, these would be user-created)
+
+  // --- 1) State for backend-fetched events
+  const [backendEvents, setBackendEvents] = useState<Event[]>([]);
+
+  // --- 2) State for user-created "manual" events
   const [manualEvents, setManualEvents] = useState<Event[]>([
     {
       id: '1',
@@ -93,57 +81,176 @@ const CalendarPage = () => {
       type: 'other',
     },
   ]);
-  
-  // Combine all events
-  const events = [...generateEvents(), ...manualEvents];
 
-  // Create a mapping of events by date for easy lookup
+  // --- 3) Generate events from course assignments + lectures
+  function generateEventsFromCourses(): Event[] {
+    const courseEvents: Event[] = [];
+
+    courses.forEach(course => {
+      // Add assignments
+      course.assignments.forEach(assignment => {
+        courseEvents.push({
+          id: `assignment-${assignment.id}`,
+          title: assignment.title,
+          description: assignment.description,
+          date: new Date(assignment.dueDate),
+          type: 'assignment',
+          courseId: course.id,
+          courseName: course.name,
+          color: course.color
+        });
+      });
+
+      // Add lectures (notes)
+      course.notes.forEach(note => {
+        courseEvents.push({
+          id: `lecture-${note.id}`,
+          title: note.title,
+          description: note.content,
+          date: new Date(note.dateAdded),
+          type: 'lecture',
+          courseId: course.id,
+          courseName: course.name,
+          color: course.color
+        });
+      });
+    });
+
+    return courseEvents;
+  }
+
+  // --- 4) Combine backend events + manual events + course events
+  const allEvents = [
+    ...backendEvents,
+    ...manualEvents,
+    ...generateEventsFromCourses(),
+  ];
+
+  // --- 5) Create a date-based dictionary for easier display
   const eventsByDate: Record<string, Event[]> = {};
-  events.forEach(event => {
-    const dateKey = format(event.date, 'yyyy-MM-dd');
+  allEvents.forEach(evt => {
+    const dateKey = format(evt.date, 'yyyy-MM-dd');
     if (!eventsByDate[dateKey]) {
       eventsByDate[dateKey] = [];
     }
-    eventsByDate[dateKey].push(event);
+    eventsByDate[dateKey].push(evt);
   });
 
-  // Custom day renderer component
+  // --- 6) Fetch from the backend on mount
+  useEffect(() => {
+    fetchBackendEvents();
+  }, []);
+
+  async function fetchBackendEvents() {
+    try {
+      const token = localStorage.getItem('token'); // or however you store it
+      const response = await fetch('/api/calendar', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // if needed
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch events: ${response.status}`);
+      }
+      const data = await response.json();
+      // Convert each backend event to front-end form:
+      const parsed = data.map((item: any) => fromBackendEvent(item));
+      setBackendEvents(parsed);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching events from backend");
+    }
+  }
+
+  // --- 7) POST new event to backend
+  async function createBackendEvent(event: Omit<Event, 'id'>) {
+    try {
+      const response = await axiosClient.post('/calendar')
+      // const token = localStorage.getItem('accessToken');
+      // const payload = {
+      //   title: event.title,
+      //   description: event.description,
+      //   eventDate: event.date.toISOString(),
+      // };
+
+      // const response = await fetch('http://localhost:8080/api/calendar', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${token}`
+      //   },
+      //   body: JSON.stringify(payload),
+      // });
+      // if (!response.ok) {
+      //   throw new Error(`Failed to create event: ${response.status}`);
+      // }
+
+      // const created = await response.json();
+      const created = response.data;
+      const newEvt = fromBackendEvent(created);
+      // add to local state
+      setBackendEvents(prev => [...prev, newEvt]);
+      toast.success("Event created in backend!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error creating event in backend");
+    }
+  }
+
+  // --- 8) DELETE event from backend
+  async function deleteBackendEvent(eventId: string) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/calendar/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to delete event: ${response.status}`);
+      }
+      // remove from local state
+      setBackendEvents(prev => prev.filter(e => e.id !== eventId));
+      toast.success("Event deleted from backend!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error deleting event in backend");
+    }
+  }
+
+  // --- 9) A custom day component for the <Calendar />
   const CustomDayContent = (props: DayContentProps) => {
     const { date: dayDate, ...rest } = props;
-    
-    if (!dayDate || !(dayDate instanceof Date) || isNaN(dayDate.getTime())) {
+    if (!dayDate || isNaN(dayDate.getTime())) {
       return <DayContent {...props} />;
     }
-    
-    const isCurrentDay = isToday(dayDate);
-    const isSelected = isSameDay(dayDate, selectedDate);
-    
-    // Get events for this day
+
     const dayKey = format(dayDate, 'yyyy-MM-dd');
     const dayEvents = eventsByDate[dayKey] || [];
-    const hasEvents = dayEvents.length > 0;
-    
+
     return (
       <div
         className={cn(
           "relative h-full w-full flex flex-col items-center justify-center",
-          hasEvents && "font-semibold"
+          dayEvents.length > 0 && "font-semibold"
         )}
         onClick={() => setSelectedDate(dayDate)}
       >
         <DayContent {...props} />
-        
-        {hasEvents && (
+
+        {dayEvents.length > 0 && (
           <div className="absolute bottom-0 flex gap-0.5">
-            {dayEvents.slice(0, 3).map((event, i) => (
+            {dayEvents.slice(0, 3).map((evt, i) => (
               <div
                 key={i}
                 className={cn(
                   "h-1 w-1 rounded-full",
-                  event.type === 'assignment' && "bg-red-500",
-                  event.type === 'lecture' && "bg-green-500",
-                  event.type === 'reminder' && "bg-blue-500",
-                  event.type === 'other' && "bg-yellow-500",
+                  evt.type === 'assignment' && "bg-red-500",
+                  evt.type === 'lecture' && "bg-green-500",
+                  evt.type === 'reminder' && "bg-blue-500",
+                  evt.type === 'other' && "bg-yellow-500",
                 )}
               />
             ))}
@@ -156,39 +263,45 @@ const CalendarPage = () => {
     );
   };
 
-  // Get events for the selected date
+  // --- 10) The events for the currently selected date:
   const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
   const selectedDateEvents = eventsByDate[selectedDateKey] || [];
 
-  const handleAddEvent = () => {
+  // --- 11) Add new event
+  async function handleAddEvent() {
     if (!newEvent.title.trim()) {
       toast.error("Event title is required");
       return;
     }
-    
-    const event: Event = {
+
+    // If you want to store it in the backend:
+    await createBackendEvent({
       ...newEvent,
-      id: crypto.randomUUID(),
       date: selectedDate,
-    };
-    
-    setManualEvents([...manualEvents, event]);
+    });
+
+    // Or also store locally:
+    // const localId = crypto.randomUUID();
+    // setManualEvents([...manualEvents, { ...newEvent, id: localId, date: selectedDate }]);
+
+    // Reset form
     setNewEvent({ title: '', description: '', date: new Date(), type: 'reminder' });
     setIsAddEventOpen(false);
-    toast.success("Event added successfully");
-  };
+  }
 
-  const handleDeleteEvent = (eventId: string) => {
-    // Only delete manually added events
-    if (eventId.startsWith('assignment-') || eventId.startsWith('lecture-')) {
-      // This is a course-related event, we don't delete these directly
-      toast.error("Course events cannot be deleted here");
+  // --- 12) Delete an event (first check if it's from backend or local)
+  function handleDeleteEvent(eventId: string) {
+    // Is it from the backend?
+    const foundBackend = backendEvents.find(e => e.id === eventId);
+    if (foundBackend) {
+      deleteBackendEvent(eventId);
       return;
     }
-    
-    setManualEvents(manualEvents.filter(event => event.id !== eventId));
-    toast.success("Event deleted successfully");
-  };
+    // Otherwise, remove from manual events
+    setManualEvents(prev => prev.filter(e => e.id !== eventId));
+    toast.success("Local event deleted!");
+  }
+
 
   return (
     <div className="page-container">
