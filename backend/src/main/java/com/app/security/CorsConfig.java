@@ -14,7 +14,7 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("https://localhost:8080", "https://localhost:8081","https://localhost:8082", "350b75fc-8724-4e60-b9ae-9029003c6552.lovableproject.com"));
+        configuration.setAllowedOrigins(Arrays.asList("https://localhost:8080", "https://localhost:8081","https://localhost:8082", "https://main.d2q2xtefokirss.amplifyapp.com/sign-in/"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
