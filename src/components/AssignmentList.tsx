@@ -61,8 +61,8 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
 
   // Sort assignments: upcoming first (not submitted and due date in the future), then past
   const sortedAssignments = [...course.assignments].sort((a, b) => {
-    const isAUpcoming = !a.isSubmitted && new Date(a.dueDate) > new Date();
-    const isBUpcoming = !b.isSubmitted && new Date(b.dueDate) > new Date();
+    const isAUpcoming = !a.submitted && new Date(a.dueDate) > new Date();
+    const isBUpcoming = !b.submitted && new Date(b.dueDate) > new Date();
     
     if (isAUpcoming && !isBUpcoming) return -1;
     if (!isAUpcoming && isBUpcoming) return 1;
@@ -72,11 +72,11 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
 
   // Group assignments by status: upcoming or past
   const upcomingAssignments = sortedAssignments.filter(
-    (assignment) => !assignment.isSubmitted && new Date(assignment.dueDate) > new Date()
+    (assignment) => !assignment.submitted && new Date(assignment.dueDate) > new Date()
   );
   
   const pastAssignments = sortedAssignments.filter(
-    (assignment) => assignment.isSubmitted || new Date(assignment.dueDate) <= new Date()
+    (assignment) => assignment.submitted || new Date(assignment.dueDate) <= new Date()
   );
 
   // Calculate if an assignment is due soon (within 48 hours)
@@ -88,8 +88,8 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
   };
 
   // Calculate if an assignment is overdue
-  const isOverdue = (dueDate: string, isSubmitted: boolean) => {
-    return !isSubmitted && new Date(dueDate) < new Date();
+  const isOverdue = (dueDate: string, submitted: boolean) => {
+    return !submitted && new Date(dueDate) < new Date();
   };
 
   // Format recurrence pattern for display
@@ -128,7 +128,7 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
       title: data.title,
       description: data.description,
       dueDate,
-      isSubmitted: false,
+      submitted: false,
       isRecurring: data.isRecurring,
       ...(data.isRecurring ? {
         recurrencePattern: data.recurrencePattern,
@@ -359,7 +359,7 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
               <div
                 key={assignment.id}
                 className={`glass-card rounded-lg p-4 transition hover:shadow-md ${
-                  isOverdue(assignment.dueDate, assignment.isSubmitted)
+                  isOverdue(assignment.dueDate, assignment.submitted)
                     ? "border-destructive/30"
                     : ""
                 }`}
@@ -382,12 +382,12 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
                       <div className="flex items-center">
                         <Clock size={14} className="mr-1 text-primary" />
                         <span className={`text-xs ${
-                          isOverdue(assignment.dueDate, assignment.isSubmitted)
+                          isOverdue(assignment.dueDate, assignment.submitted)
                             ? "text-destructive"
                             : "text-muted-foreground"
                         }`}>
                           Due: {formatDate(assignment.dueDate)}
-                          {isOverdue(assignment.dueDate, assignment.isSubmitted) && " (Overdue)"}
+                          {isOverdue(assignment.dueDate, assignment.submitted) && " (Overdue)"}
                         </span>
                       </div>
                       
@@ -404,9 +404,9 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
                   <button
                     onClick={() => toggleStatus(assignment.id)}
                     className="p-2 rounded-full hover:bg-secondary transition-colors"
-                    aria-label={assignment.isSubmitted ? "Mark as incomplete" : "Mark as complete"}
+                    aria-label={assignment.submitted ? "Mark as incomplete" : "Mark as complete"}
                   >
-                    {assignment.isSubmitted ? (
+                    {assignment.submitted ? (
                       <CheckCircle size={18} className="text-primary" />
                     ) : (
                       <XCircle size={18} className="text-destructive" />

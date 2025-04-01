@@ -94,13 +94,13 @@ export const courseService = {
     }
   },
 
-  // Add an assignment to a course - updated to ensure isSubmitted is included
+  // Add an assignment to a course - updated to ensure submitted is included
   addAssignment: async (courseId: string, assignmentData: Omit<Assignment, "id" | "courseName">): Promise<Assignment> => {
     try {
-      // Ensure isSubmitted is present in the data, default to false if not provided
+      // Ensure submitted is present in the data, default to false if not provided
       const dataWithSubmitStatus = {
         ...assignmentData,
-        isSubmitted: assignmentData.isSubmitted !== undefined ? assignmentData.isSubmitted : false
+        submitted: assignmentData.submitted !== undefined ? assignmentData.submitted : false
       };
       
       const response = await axiosClient.post(`/courses/${courseId}/assignments`, dataWithSubmitStatus);

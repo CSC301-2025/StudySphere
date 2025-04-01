@@ -9,7 +9,7 @@ const Upcoming = () => {
   
   // Get upcoming assignments (not submitted and due date in the future)
   const upcomingAssignments = assignments.filter(assignment => {
-    return !assignment.isSubmitted && new Date(assignment.dueDate) > new Date();
+    return !assignment.submitted && new Date(assignment.dueDate) > new Date();
   }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   // Format date for display

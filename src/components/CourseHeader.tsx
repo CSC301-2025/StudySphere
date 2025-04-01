@@ -14,7 +14,7 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
   
   // Count upcoming assignments
   const upcomingAssignments = course.assignments.filter(
-    (assignment) => !assignment.isSubmitted && new Date(assignment.dueDate) > new Date()
+    (assignment) => !assignment.submitted && new Date(assignment.dueDate) > new Date()
   );
 
   // Calculate overall grade if there are any grades

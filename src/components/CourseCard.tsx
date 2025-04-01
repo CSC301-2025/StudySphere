@@ -12,13 +12,13 @@ type CourseCardProps = {
 const CourseCard = ({ course }: CourseCardProps) => {
   // Count upcoming assignments (not submitted and due date in the future)
   const upcomingAssignmentsCount = course.assignments.filter(assignment => {
-    return !assignment.isSubmitted && new Date(assignment.dueDate) > new Date();
+    return !assignment.submitted && new Date(assignment.dueDate) > new Date();
   }).length;
   
   // Get the closest assignment due date
   const closestAssignment = course.assignments.length > 0 
     ? course.assignments
-        .filter(a => !a.isSubmitted)
+        .filter(a => !a.submitted)
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
     : null;
 

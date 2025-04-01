@@ -25,7 +25,7 @@ const Index = () => {
       return safeAssignments
         .filter(assignment => {
           if (!assignment) return false;
-          return !assignment.isSubmitted && new Date(assignment.dueDate) > new Date();
+          return !assignment.submitted && new Date(assignment.dueDate) > new Date();
         })
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
     } catch (error) {

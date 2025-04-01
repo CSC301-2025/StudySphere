@@ -10,7 +10,7 @@ export type Assignment = {
   title: string;
   description: string;
   dueDate: string;
-  isSubmitted: boolean;
+  submitted: boolean;
   courseName: string;
   isRecurring: boolean;
   recurrencePattern?: 'daily' | 'weekly' | 'monthly';
@@ -231,7 +231,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         ...assignment,
         id: tempId,
         courseName: previousCourses?.find(c => c.id === courseId)?.name || "",
-        isSubmitted: false,
+        submitted: false,
         isRecurring: assignment.isRecurring || false,
       };
       
@@ -295,7 +295,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         const updatedCourses = safeArray(previousCourses).map(course => {
           if (course.id === courseId) {
             const updatedAssignments = safeArray(course.assignments).map(a => 
-              a.id === assignmentId ? { ...a, isSubmitted: !a.isSubmitted } : a
+              a.id === assignmentId ? { ...a, submitted: !a.submitted } : a
             );
             return { ...course, assignments: updatedAssignments };
           }
@@ -308,7 +308,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       // Update individual course if it's loaded
       if (previousCourse) {
         const updatedAssignments = safeArray(previousCourse.assignments).map(a => 
-          a.id === assignmentId ? { ...a, isSubmitted: !a.isSubmitted } : a
+          a.id === assignmentId ? { ...a, submitted: !a.submitted } : a
         );
         
         const updatedCourse = { ...previousCourse, assignments: updatedAssignments };
