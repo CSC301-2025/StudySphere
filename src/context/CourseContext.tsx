@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { courseService } from "../services/courseService";
@@ -44,6 +45,14 @@ export type Course = {
   grades: Grade[];
 };
 
+// Improved safe array helper to prevent flatMap errors
+const safeArray = <T,>(arr: T[] | null | undefined): T[] => {
+  if (!arr || !Array.isArray(arr)) {
+    return [];
+  }
+  return arr;
+};
+
 // Context type
 type CourseContextType = {
   courses: Course[];
@@ -74,24 +83,52 @@ const CourseContext = createContext<CourseContextType | undefined>(undefined);
 export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
 
-  // Fetch courses from the API
+  // Fetch courses from the API with enhanced error handling
   const { 
     data: courses = [], 
     isLoading, 
     isError 
   } = useQuery({
     queryKey: ['courses'],
-    queryFn: courseService.getAllCourses
+    queryFn: courseService.getAllCourses,
+    // Add default value if data is null/undefined
+    select: (data) => Array.isArray(data) ? data : []
   });
 
-  // Create mutations for CRUD operations
+  // Create mutations for CRUD operations with optimistic updates
   const createCourseMutation = useMutation({
     mutationFn: courseService.createCourse,
+    onMutate: async (newCourse) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      
+      // Snapshot the previous value
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      
+      // Create optimistic course
+      const optimisticCourse: Course = {
+        ...newCourse,
+        id: `temp-${Date.now()}`,
+        assignments: [],
+        notes: [],
+        grades: []
+      } as Course;
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['courses'], [...safeArray(previousCourses), optimisticCourse]);
+      
+      // Return a context with the previous and new course
+      return { previousCourses, optimisticCourse };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       toast.success("Course added successfully");
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      // Roll back to the previous value if an error occurred
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
       console.error("Error creating course:", error);
       toast.error("Failed to add course");
     }
@@ -99,11 +136,37 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
   const updateCourseMutation = useMutation({
     mutationFn: (course: Course) => courseService.updateCourse(course.id, course),
+    onMutate: async (updatedCourse) => {
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      
+      // Update course in the list
+      const updatedCourses = safeArray(previousCourses).map(course => 
+        course.id === updatedCourse.id ? updatedCourse : course
+      );
+      
+      queryClient.setQueryData(['courses'], updatedCourses);
+      
+      // Also update the individual course cache if it exists
+      const previousCourse = queryClient.getQueryData(['course', updatedCourse.id]) as Course;
+      if (previousCourse) {
+        queryClient.setQueryData(['course', updatedCourse.id], updatedCourse);
+      }
+      
+      return { previousCourses, previousCourse };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       toast.success("Course updated successfully");
     },
-    onError: (error) => {
+    onError: (error, updatedCourse, context) => {
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
+      if (context?.previousCourse) {
+        queryClient.setQueryData(['course', updatedCourse.id], context.previousCourse);
+      }
       console.error("Error updating course:", error);
       toast.error("Failed to update course");
     }
@@ -111,11 +174,26 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteCourseMutation = useMutation({
     mutationFn: courseService.deleteCourse,
+    onMutate: async (courseId) => {
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      
+      // Filter out the deleted course
+      const updatedCourses = safeArray(previousCourses).filter(course => course.id !== courseId);
+      
+      queryClient.setQueryData(['courses'], updatedCourses);
+      
+      return { previousCourses };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       toast.success("Course deleted successfully");
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
       console.error("Error deleting course:", error);
       toast.error("Failed to delete course");
     }
@@ -124,11 +202,63 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const addAssignmentMutation = useMutation({
     mutationFn: ({ courseId, assignment }: { courseId: string, assignment: any }) => 
       courseService.addAssignment(courseId, assignment),
-    onSuccess: () => {
+    onMutate: async ({ courseId, assignment }) => {
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      await queryClient.cancelQueries({ queryKey: ['course', courseId] });
+      
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      const previousCourse = queryClient.getQueryData(['course', courseId]) as Course | undefined;
+      
+      // Create optimistic assignment
+      const tempId = `temp-${Date.now()}`;
+      const optimisticAssignment: Assignment = {
+        ...assignment,
+        id: tempId,
+        courseName: previousCourses?.find(c => c.id === courseId)?.name || "",
+        isSubmitted: false,
+        isRecurring: assignment.isRecurring || false,
+      };
+      
+      // Update courses list
+      if (previousCourses) {
+        const updatedCourses = safeArray(previousCourses).map(course => {
+          if (course.id === courseId) {
+            return {
+              ...course,
+              assignments: [...safeArray(course.assignments), optimisticAssignment]
+            };
+          }
+          return course;
+        });
+        
+        queryClient.setQueryData(['courses'], updatedCourses);
+      }
+      
+      // Update individual course if it's loaded
+      if (previousCourse) {
+        const updatedCourse = {
+          ...previousCourse,
+          assignments: [...safeArray(previousCourse.assignments), optimisticAssignment]
+        };
+        
+        queryClient.setQueryData(['course', courseId], updatedCourse);
+      }
+      
+      return { previousCourses, previousCourse, tempId };
+    },
+    onSuccess: (_, { courseId }) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
       toast.success("Assignment added successfully");
     },
-    onError: (error) => {
+    onError: (error, { courseId }, context) => {
+      // Roll back to previous state
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
+      if (context?.previousCourse) {
+        queryClient.setQueryData(['course', courseId], context.previousCourse);
+      }
       console.error("Error adding assignment:", error);
       toast.error("Failed to add assignment");
     }
@@ -137,10 +267,51 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const toggleAssignmentMutation = useMutation({
     mutationFn: ({ courseId, assignmentId }: { courseId: string, assignmentId: string }) => 
       courseService.toggleAssignmentStatus(courseId, assignmentId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    onMutate: async ({ courseId, assignmentId }) => {
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      await queryClient.cancelQueries({ queryKey: ['course', courseId] });
+      
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      const previousCourse = queryClient.getQueryData(['course', courseId]) as Course | undefined;
+      
+      // Update courses list
+      if (previousCourses) {
+        const updatedCourses = safeArray(previousCourses).map(course => {
+          if (course.id === courseId) {
+            const updatedAssignments = safeArray(course.assignments).map(a => 
+              a.id === assignmentId ? { ...a, isSubmitted: !a.isSubmitted } : a
+            );
+            return { ...course, assignments: updatedAssignments };
+          }
+          return course;
+        });
+        
+        queryClient.setQueryData(['courses'], updatedCourses);
+      }
+      
+      // Update individual course if it's loaded
+      if (previousCourse) {
+        const updatedAssignments = safeArray(previousCourse.assignments).map(a => 
+          a.id === assignmentId ? { ...a, isSubmitted: !a.isSubmitted } : a
+        );
+        
+        const updatedCourse = { ...previousCourse, assignments: updatedAssignments };
+        queryClient.setQueryData(['course', courseId], updatedCourse);
+      }
+      
+      return { previousCourses, previousCourse };
     },
-    onError: (error) => {
+    onSuccess: (_, { courseId }) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+    },
+    onError: (error, { courseId }, context) => {
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
+      if (context?.previousCourse) {
+        queryClient.setQueryData(['course', courseId], context.previousCourse);
+      }
       console.error("Error toggling assignment status:", error);
       toast.error("Failed to update assignment");
     }
@@ -149,11 +320,59 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const addNoteMutation = useMutation({
     mutationFn: ({ courseId, note }: { courseId: string, note: Omit<Note, "id" | "dateAdded"> }) => 
       courseService.addNote(courseId, note),
-    onSuccess: () => {
+    onMutate: async ({ courseId, note }) => {
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      await queryClient.cancelQueries({ queryKey: ['course', courseId] });
+      
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      const previousCourse = queryClient.getQueryData(['course', courseId]) as Course | undefined;
+      
+      // Create optimistic note
+      const optimisticNote: Note = {
+        ...note,
+        id: `temp-${Date.now()}`,
+        dateAdded: new Date().toISOString()
+      };
+      
+      // Update courses list
+      if (previousCourses) {
+        const updatedCourses = safeArray(previousCourses).map(course => {
+          if (course.id === courseId) {
+            return {
+              ...course,
+              notes: [...safeArray(course.notes), optimisticNote]
+            };
+          }
+          return course;
+        });
+        
+        queryClient.setQueryData(['courses'], updatedCourses);
+      }
+      
+      // Update individual course if it's loaded
+      if (previousCourse) {
+        const updatedCourse = {
+          ...previousCourse,
+          notes: [...safeArray(previousCourse.notes), optimisticNote]
+        };
+        
+        queryClient.setQueryData(['course', courseId], updatedCourse);
+      }
+      
+      return { previousCourses, previousCourse };
+    },
+    onSuccess: (_, { courseId }) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
       toast.success("Note added successfully");
     },
-    onError: (error) => {
+    onError: (error, { courseId }, context) => {
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
+      if (context?.previousCourse) {
+        queryClient.setQueryData(['course', courseId], context.previousCourse);
+      }
       console.error("Error adding note:", error);
       toast.error("Failed to add note");
     }
@@ -162,27 +381,96 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const addGradeMutation = useMutation({
     mutationFn: ({ courseId, grade }: { courseId: string, grade: Omit<Grade, "id"> }) => 
       courseService.addGrade(courseId, grade),
-    onSuccess: () => {
+    onMutate: async ({ courseId, grade }) => {
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+      await queryClient.cancelQueries({ queryKey: ['course', courseId] });
+      
+      const previousCourses = queryClient.getQueryData(['courses']) as Course[];
+      const previousCourse = queryClient.getQueryData(['course', courseId]) as Course | undefined;
+      
+      // Create optimistic grade
+      const optimisticGrade: Grade = {
+        ...grade,
+        id: `temp-${Date.now()}`
+      };
+      
+      // Update courses list
+      if (previousCourses) {
+        const updatedCourses = safeArray(previousCourses).map(course => {
+          if (course.id === courseId) {
+            return {
+              ...course,
+              grades: [...safeArray(course.grades), optimisticGrade]
+            };
+          }
+          return course;
+        });
+        
+        queryClient.setQueryData(['courses'], updatedCourses);
+      }
+      
+      // Update individual course if it's loaded
+      if (previousCourse) {
+        const updatedCourse = {
+          ...previousCourse,
+          grades: [...safeArray(previousCourse.grades), optimisticGrade]
+        };
+        
+        queryClient.setQueryData(['course', courseId], updatedCourse);
+      }
+      
+      return { previousCourses, previousCourse };
+    },
+    onSuccess: (_, { courseId }) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
       toast.success("Grade added successfully");
     },
-    onError: (error) => {
+    onError: (error, { courseId }, context) => {
+      if (context?.previousCourses) {
+        queryClient.setQueryData(['courses'], context.previousCourses);
+      }
+      if (context?.previousCourse) {
+        queryClient.setQueryData(['course', courseId], context.previousCourse);
+      }
       console.error("Error adding grade:", error);
       toast.error("Failed to add grade");
     }
   });
 
-  // Calculate all assignments across courses
-  const assignments = courses?.flatMap(course => 
-    course.assignments.map(assignment => ({
-      ...assignment,
-      courseName: course.name
-    }))
-  ) || [];
+  // Calculate all assignments across courses with enhanced safety
+  const assignments = React.useMemo(() => {
+    try {
+      // Ensure courses is an array and guard against null/undefined
+      const safeCourses = safeArray(courses);
+      if (safeCourses.length === 0) return [];
+      
+      // Use reduce instead of flatMap for better compatibility
+      return safeCourses.reduce((allAssignments: Assignment[], course) => {
+        // Make sure course assignments exist and are an array
+        const courseAssignments = safeArray(course.assignments);
+        
+        // Add course name to each assignment
+        const assignmentsWithCourseName = courseAssignments.map(assignment => ({
+          ...assignment,
+          courseName: course.name
+        }));
+        
+        // Combine with previous assignments
+        return [...allAssignments, ...assignmentsWithCourseName];
+      }, []);
+    } catch (error) {
+      console.error("Error processing assignments:", error);
+      return [];
+    }
+  }, [courses]);
 
   // Get a specific course by ID
   const getCourse = (id: string) => {
-    return courses?.find(course => course.id === id);
+    if (!Array.isArray(courses) || courses.length === 0) {
+      return undefined;
+    }
+    return courses.find(course => course.id === id);
   };
 
   // Add a new assignment to a course
@@ -253,9 +541,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const addGrade = (courseId: string, grade: Omit<Grade, "id">) => {
     addGradeMutation.mutate({ 
       courseId, 
-      grade: {
-        ...grade
-      }
+      grade
     });
   };
 

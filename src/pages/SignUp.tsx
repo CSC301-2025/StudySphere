@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
@@ -13,14 +12,27 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/context/AuthContext";
 import { RegisterData } from "@/types/auth";
 
-// Form validation schema
+// Form validation schema with enhanced password requirements
 const formSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   phoneNumber: z.string().min(10, "Phone number must be at least 10 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Confirm password must be at least 8 characters"),
+  password: z.string()
+    .min(6, "Password must be at least 6 characters")
+    .refine(
+      (password) => /[A-Z]/.test(password),
+      "Password must contain at least one uppercase letter"
+    )
+    .refine(
+      (password) => /[a-z]/.test(password),
+      "Password must contain at least one lowercase letter"
+    )
+    .refine(
+      (password) => /[0-9]/.test(password),
+      "Password must contain at least one number"
+    ),
+  confirmPassword: z.string().min(6, "Confirm password must be at least 6 characters"),
   recoveryEmail: z.string().email("Please enter a valid recovery email address").optional().or(z.literal("")),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -171,6 +183,10 @@ const SignUp = () => {
                         {...field} 
                       />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Password must be at least 6 characters and include an uppercase letter, 
+                      a lowercase letter, and a number.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

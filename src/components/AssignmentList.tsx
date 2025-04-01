@@ -10,6 +10,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCourses } from "../context/CourseContext";
+import { toast } from "sonner";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+// Define validation schema using Zod
+const assignmentSchema = z.object({
+  title: z.string().min(1, "Title is required").max(100, "Title is too long"),
+  description: z.string().min(1, "Description is required"),
+  dueDate: z.string().min(1, "Due date is required"),
+  isRecurring: z.boolean().default(false),
+  recurrencePattern: z.enum(["daily", "weekly", "monthly"]).optional(),
+  recurrenceEndDate: z.string().optional(),
+});
 
 type AssignmentListProps = {
   course: Course;
@@ -19,14 +34,18 @@ type AssignmentListProps = {
 const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
   const { addAssignment } = useCourses();
   const [isAddAssignmentOpen, setIsAddAssignmentOpen] = useState(false);
-  const [newAssignment, setNewAssignment] = useState({
-    title: '',
-    description: '',
-    dueDate: '',
-    isSubmitted: false,
-    isRecurring: false,
-    recurrencePattern: 'weekly' as 'daily' | 'weekly' | 'monthly',
-    recurrenceEndDate: ''
+
+  // Setup form with validation
+  const form = useForm<z.infer<typeof assignmentSchema>>({
+    resolver: zodResolver(assignmentSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      dueDate: "",
+      isRecurring: false,
+      recurrencePattern: "weekly",
+      recurrenceEndDate: "",
+    },
   });
 
   // Format date for display
@@ -91,42 +110,49 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
     return patternText;
   };
 
-  // Handle adding a new assignment
-  const handleAddAssignment = () => {
+  // Handle adding a new assignment with validation
+  const onSubmit = (data: z.infer<typeof assignmentSchema>) => {
     // Format date string to ISO
-    let dueDate = newAssignment.dueDate;
+    let dueDate = data.dueDate;
     if (dueDate && !dueDate.includes('T')) {
       dueDate = `${dueDate}T23:59:59`;
     }
     
-    let recurrenceEndDate = newAssignment.recurrenceEndDate;
+    let recurrenceEndDate = data.recurrenceEndDate;
     if (recurrenceEndDate && !recurrenceEndDate.includes('T')) {
       recurrenceEndDate = `${recurrenceEndDate}T23:59:59`;
     }
     
-    // Only include recurrence fields if it's a recurring assignment
+    // Create assignment data with all required fields explicitly set as non-optional
     const assignmentData = {
-      ...newAssignment,
+      title: data.title,
+      description: data.description,
       dueDate,
-      ...(newAssignment.isRecurring ? {
-        recurrencePattern: newAssignment.recurrencePattern,
+      isSubmitted: false,
+      isRecurring: data.isRecurring,
+      ...(data.isRecurring ? {
+        recurrencePattern: data.recurrencePattern,
         recurrenceEndDate: recurrenceEndDate || undefined
       } : {})
     };
     
+    // Pass along the optimistic UI option
     addAssignment(course.id, assignmentData);
     
     // Reset form and close dialog
-    setNewAssignment({
-      title: '',
-      description: '',
-      dueDate: '',
-      isSubmitted: false,
-      isRecurring: false,
-      recurrencePattern: 'weekly',
-      recurrenceEndDate: ''
-    });
+    form.reset();
     setIsAddAssignmentOpen(false);
+    
+    // Show success toast
+    toast.success("Assignment added successfully");
+  };
+
+  // Reset form when dialog closes
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      form.reset();
+    }
+    setIsAddAssignmentOpen(open);
   };
 
   return (
@@ -134,7 +160,7 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
       {/* Add assignment button */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Upcoming Assignments</h3>
-        <Dialog open={isAddAssignmentOpen} onOpenChange={setIsAddAssignmentOpen}>
+        <Dialog open={isAddAssignmentOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />
@@ -149,85 +175,115 @@ const AssignmentList = ({ course, toggleStatus }: AssignmentListProps) => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">Title</Label>
-                <Input 
-                  id="title" 
-                  value={newAssignment.title}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                  placeholder="Assignment title" 
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Assignment title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  value={newAssignment.description}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-                  placeholder="What needs to be done?" 
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="What needs to be done?" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="datetime-local"
-                  value={newAssignment.dueDate}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, dueDate: e.target.value })}
+                
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Due Date</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isRecurring"
-                  checked={newAssignment.isRecurring}
-                  onCheckedChange={(checked) => 
-                    setNewAssignment({ ...newAssignment, isRecurring: checked })
-                  }
+                
+                <FormField
+                  control={form.control}
+                  name="isRecurring"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Recurring Assignment</FormLabel>
+                    </FormItem>
+                  )}
                 />
-                <Label htmlFor="isRecurring">Recurring Assignment</Label>
-              </div>
-              
-              {newAssignment.isRecurring && (
-                <>
-                  <div className="grid gap-2">
-                    <Label htmlFor="recurrencePattern">Recurrence Pattern</Label>
-                    <Select 
-                      value={newAssignment.recurrencePattern} 
-                      onValueChange={(value: 'daily' | 'weekly' | 'monthly') => 
-                        setNewAssignment({ ...newAssignment, recurrencePattern: value })
-                      }
-                    >
-                      <SelectTrigger id="recurrencePattern">
-                        <SelectValue placeholder="Select pattern" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="recurrenceEndDate">End Date (Optional)</Label>
-                    <Input
-                      id="recurrenceEndDate"
-                      type="date"
-                      value={newAssignment.recurrenceEndDate}
-                      onChange={(e) => setNewAssignment({ ...newAssignment, recurrenceEndDate: e.target.value })}
+                
+                {form.watch("isRecurring") && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="recurrencePattern"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Recurrence Pattern</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select pattern" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
-                </>
-              )}
-            </div>
-            
-            <DialogFooter>
-              <Button onClick={handleAddAssignment}>Add Assignment</Button>
-            </DialogFooter>
+                    
+                    <FormField
+                      control={form.control}
+                      name="recurrenceEndDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date (Optional)</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+                
+                <DialogFooter>
+                  <Button type="submit">Add Assignment</Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>

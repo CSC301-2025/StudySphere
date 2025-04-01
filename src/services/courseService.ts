@@ -1,4 +1,3 @@
-
 import axiosClient from "@/lib/axiosClient";
 import { Course, Note, Assignment, Grade } from "@/context/CourseContext";
 
@@ -7,10 +6,12 @@ export const courseService = {
   getAllCourses: async (): Promise<Course[]> => {
     try {
       const response = await axiosClient.get('/courses');
-      return response.data;
+      // Ensure we return an empty array instead of null or undefined
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error('Error fetching courses:', error);
-      throw error;
+      // Return empty array on error instead of throwing
+      return [];
     }
   },
 
@@ -18,7 +19,14 @@ export const courseService = {
   getCourseById: async (courseId: string): Promise<Course> => {
     try {
       const response = await axiosClient.get(`/courses/${courseId}`);
-      return response.data;
+      // Ensure assignments, notes, and grades are arrays
+      const course = response.data;
+      if (course) {
+        course.assignments = Array.isArray(course.assignments) ? course.assignments : [];
+        course.notes = Array.isArray(course.notes) ? course.notes : [];
+        course.grades = Array.isArray(course.grades) ? course.grades : [];
+      }
+      return course;
     } catch (error) {
       console.error(`Error fetching course ${courseId}:`, error);
       throw error;
@@ -62,10 +70,16 @@ export const courseService = {
     }
   },
 
-  // Add an assignment to a course
+  // Add an assignment to a course - updated to ensure isSubmitted is included
   addAssignment: async (courseId: string, assignmentData: Omit<Assignment, "id" | "courseName">): Promise<Assignment> => {
     try {
-      const response = await axiosClient.post(`/courses/${courseId}/assignments`, assignmentData);
+      // Ensure isSubmitted is present in the data, default to false if not provided
+      const dataWithSubmitStatus = {
+        ...assignmentData,
+        isSubmitted: assignmentData.isSubmitted !== undefined ? assignmentData.isSubmitted : false
+      };
+      
+      const response = await axiosClient.post(`/courses/${courseId}/assignments`, dataWithSubmitStatus);
       return response.data;
     } catch (error) {
       console.error(`Error adding assignment to course ${courseId}:`, error);
