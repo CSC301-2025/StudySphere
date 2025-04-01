@@ -19,6 +19,7 @@ const Courses = () => {
   const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
   const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [newCourse, setNewCourse] = useState({
     name: '',
     description: '',
@@ -35,8 +36,22 @@ const Courses = () => {
       course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
+  // Validate course name
+  const validateCourseName = (name: string): boolean => {
+    if (!name.trim()) {
+      setNameError('Course name is required');
+      return false;
+    }
+    setNameError(null);
+    return true;
+  };
+
   // Handle adding a new course
   const handleAddCourse = () => {
+    if (!validateCourseName(newCourse.name)) {
+      return;
+    }
+    
     addCourse(newCourse);
     setNewCourse({ name: '', description: '', instructor: '', code: '', schedule: '', color: '#6D28D9' });
     setIsAddCourseOpen(false);
@@ -44,6 +59,10 @@ const Courses = () => {
 
   // Handle editing a course
   const handleEditCourse = () => {
+    if (selectedCourse && !validateCourseName(selectedCourse.name)) {
+      return;
+    }
+    
     if (selectedCourse) {
       updateCourse(selectedCourse);
       setSelectedCourse(null);
@@ -59,6 +78,7 @@ const Courses = () => {
   // Open edit dialog with selected course data
   const openEditDialog = (course: Course) => {
     setSelectedCourse(course);
+    setNameError(null);
     setIsEditCourseOpen(true);
   };
 
@@ -118,7 +138,7 @@ const Courses = () => {
               Add Course
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Course</DialogTitle>
               <DialogDescription>
@@ -126,15 +146,22 @@ const Courses = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-2">
               <div className="grid gap-2">
-                <Label htmlFor="name">Course Name</Label>
+                <Label htmlFor="name" className="flex items-center">
+                  Course Name <span className="text-destructive ml-1">*</span>
+                </Label>
                 <Input 
                   id="name" 
                   value={newCourse.name}
-                  onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewCourse({ ...newCourse, name: e.target.value });
+                    if (e.target.value) setNameError(null);
+                  }}
                   placeholder="Course title" 
+                  className={nameError ? "border-destructive" : ""}
                 />
+                {nameError && <p className="text-sm text-destructive">{nameError}</p>}
               </div>
               
               <div className="grid gap-2">
@@ -174,6 +201,7 @@ const Courses = () => {
                   value={newCourse.description}
                   onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                   placeholder="What's this course about?" 
+                  className="max-h-32"
                 />
               </div>
               
@@ -194,7 +222,7 @@ const Courses = () => {
               </div>
             </div>
             
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <Button onClick={handleAddCourse}>Create Course</Button>
             </DialogFooter>
           </DialogContent>
@@ -202,7 +230,7 @@ const Courses = () => {
 
         {/* Edit Course Dialog */}
         <Dialog open={isEditCourseOpen} onOpenChange={setIsEditCourseOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Course</DialogTitle>
               <DialogDescription>
@@ -211,14 +239,21 @@ const Courses = () => {
             </DialogHeader>
             
             {selectedCourse && (
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 py-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-name">Course Name</Label>
+                  <Label htmlFor="edit-name" className="flex items-center">
+                    Course Name <span className="text-destructive ml-1">*</span>
+                  </Label>
                   <Input 
                     id="edit-name" 
                     value={selectedCourse.name}
-                    onChange={(e) => setSelectedCourse({ ...selectedCourse, name: e.target.value })}
+                    onChange={(e) => {
+                      setSelectedCourse({ ...selectedCourse, name: e.target.value });
+                      if (e.target.value) setNameError(null);
+                    }}
+                    className={nameError ? "border-destructive" : ""}
                   />
+                  {nameError && <p className="text-sm text-destructive">{nameError}</p>}
                 </div>
                 
                 <div className="grid gap-2">
@@ -254,6 +289,7 @@ const Courses = () => {
                     id="edit-description" 
                     value={selectedCourse.description}
                     onChange={(e) => setSelectedCourse({ ...selectedCourse, description: e.target.value })}
+                    className="max-h-32"
                   />
                 </div>
                 
@@ -272,7 +308,7 @@ const Courses = () => {
               </div>
             )}
             
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <Button variant="outline" onClick={() => setIsEditCourseOpen(false)}>Cancel</Button>
               <Button onClick={handleEditCourse}>Save Changes</Button>
             </DialogFooter>

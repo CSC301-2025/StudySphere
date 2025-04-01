@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Sun, Moon, LogOut, User, Users, BellDot } from "lucide-react";
@@ -25,16 +26,22 @@ const Navbar = () => {
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
   
-  // Check for user's preferred color scheme on initial load
-  const [isDarkMode, setIsDarkMode] = React.useState(
-    document.documentElement.classList.contains('dark')
-  );
+  // Initialize isDarkMode from localStorage instead of the DOM
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const storedTheme = localStorage.getItem("darkMode");
+    return storedTheme === "true";
+  });
   
+  // Check stored preferences on initial load
   useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDark && !document.documentElement.classList.contains('dark')) {
-      setIsDarkMode(true);
+    const storedTheme = localStorage.getItem("darkMode");
+    
+    if (storedTheme === "true" && !document.documentElement.classList.contains('dark')) {
       document.documentElement.classList.add('dark');
+      setIsDarkMode(true);
+    } else if (storedTheme === "false" && document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+      setIsDarkMode(false);
     }
   }, []);
 

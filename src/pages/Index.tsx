@@ -5,13 +5,34 @@ import { BookOpen, Clock, FileText, Calendar, ArrowRight } from "lucide-react";
 import { useCourses } from "../context/CourseContext";
 import CourseCard from "../components/CourseCard";
 
+// Enhanced safe array helper function with better type checking
+const safeArray = <T,>(arr: T[] | null | undefined): T[] => {
+  if (!arr || !Array.isArray(arr)) {
+    return [];
+  }
+  return arr;
+};
+
 const Index = () => {
-  const { courses, assignments } = useCourses();
+  const { courses, assignments, isLoading } = useCourses();
   
-  // Get upcoming assignments (not submitted and due date in the future)
-  const upcomingAssignments = assignments.filter(assignment => {
-    return !assignment.isSubmitted && new Date(assignment.dueDate) > new Date();
-  }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  // Enhanced safety - Get upcoming assignments with comprehensive checks
+  const upcomingAssignments = React.useMemo(() => {
+    try {
+      const safeAssignments = safeArray(assignments);
+      if (safeAssignments.length === 0) return [];
+      
+      return safeAssignments
+        .filter(assignment => {
+          if (!assignment) return false;
+          return !assignment.isSubmitted && new Date(assignment.dueDate) > new Date();
+        })
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    } catch (error) {
+      console.error("Error processing upcoming assignments:", error);
+      return [];
+    }
+  }, [assignments]);
 
   // Format date for display
   const formatDueDate = (dateString: string) => {
@@ -33,6 +54,15 @@ const Index = () => {
         minute: "2-digit"
       });
     }
+  };
+
+  // Safely find a course by name
+  const findCourseIdByName = (courseName: string): string => {
+    const safeCourses = safeArray(courses);
+    if (safeCourses.length === 0) return '';
+    
+    const course = safeCourses.find(c => c && c.name === courseName);
+    return course?.id || '';
   };
 
   return (
@@ -68,20 +98,32 @@ const Index = () => {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {courses.slice(0, 4).map((course) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
+              {safeArray(courses).length > 0 ? (
+                safeArray(courses).slice(0, 4).map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))
+              ) : isLoading ? (
+                <div className="col-span-2 text-center py-8">
+                  <p className="text-muted-foreground">Loading courses...</p>
+                </div>
+              ) : (
+                <div className="col-span-2 text-center py-8">
+                  <p className="text-muted-foreground">No courses available. Add your first course!</p>
+                </div>
+              )}
             </div>
           </div>
-          
-          {/* Recent Activity section has been removed */}
         </div>
         
         {/* Upcoming Assignments */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold mb-4">Upcoming Due</h2>
           <div className="glass-card rounded-xl p-5">
-            {upcomingAssignments.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading assignments...</p>
+              </div>
+            ) : upcomingAssignments.length === 0 ? (
               <div className="text-center py-8">
                 <Clock size={32} className="mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-1">All caught up!</h3>
@@ -101,7 +143,7 @@ const Index = () => {
                     </div>
                     <div>
                       <Link 
-                        to={`/course/${courses.find(c => c.name === assignment.courseName)?.id}/assignments`}
+                        to={`/course/${findCourseIdByName(assignment.courseName)}/assignments`}
                         className="font-medium hover:underline line-clamp-1"
                       >
                         {assignment.title}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -36,9 +37,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  // Check for dark mode preference
+  // Check for stored theme preference instead of system preference
   useEffect(() => {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    const storedTheme = localStorage.getItem("darkMode");
+    
+    // Make light mode the default by removing dark class if no preference is stored
+    // or if light mode was explicitly selected
+    if (storedTheme === "false" || !storedTheme) {
+      document.documentElement.classList.remove('dark');
+    } else if (storedTheme === "true") {
       document.documentElement.classList.add('dark');
     }
   }, []);

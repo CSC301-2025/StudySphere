@@ -28,9 +28,12 @@ const ThemeSettings: React.FC = () => {
     return localStorage.getItem("grayscale-mode") === "true";
   });
 
-  const [isDarkMode, setIsDarkMode] = useState(
-    document.documentElement.classList.contains("dark")
-  );
+  // Set initial dark mode state from localStorage instead of checking the DOM
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const storedTheme = localStorage.getItem("darkMode");
+    // Default to light mode (false) if no preference is stored
+    return storedTheme === "true";
+  });
 
   // Apply theme settings when component mounts and when settings change
   useEffect(() => {
@@ -93,14 +96,17 @@ const ThemeSettings: React.FC = () => {
     });
     
     document.documentElement.classList.remove("grayscale");
+    document.documentElement.classList.remove("dark");
     
     // Reset state
     setTheme("default");
     setIsGrayscale(false);
+    setIsDarkMode(false);
     
     // Reset localStorage
     localStorage.removeItem("color-theme");
     localStorage.removeItem("grayscale-mode");
+    localStorage.setItem("darkMode", "false");
     
     toast.success("Theme settings reset to defaults");
   };
