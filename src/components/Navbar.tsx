@@ -86,9 +86,9 @@ const Navbar = () => {
           <SidebarTrigger />
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* <div className="flex items-center gap-4">
           {!hideSearchBar && <SearchBar onSearch={handleSearch} placeholder="Search..." />}
-        </div>
+        </div> */}
 
         <div className="ml-auto flex items-center gap-4">
           <nav className="hidden md:flex items-center space-x-4">
