@@ -12,6 +12,7 @@ axiosClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+  console.log("AXIONS CLIENT" + axiosClient)
 });
 
 export default axiosClient;
