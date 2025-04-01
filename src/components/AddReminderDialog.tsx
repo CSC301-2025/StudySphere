@@ -1,12 +1,13 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { CalendarIcon, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, Clock, Loader2 } from "lucide-react";
+import { format, parse } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { calendarService, CalendarEvent } from "@/services/calendarService";
 
 import {
   Dialog,
@@ -67,6 +68,8 @@ const AddReminderDialog: React.FC<AddReminderDialogProps> = ({
   onOpenChange,
   course,
 }) => {
+  const queryClient = useQueryClient();
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -74,6 +77,26 @@ const AddReminderDialog: React.FC<AddReminderDialogProps> = ({
       description: "",
       reminderDate: new Date(),
       reminderTime: format(new Date(), "HH:mm"),
+    },
+  });
+  
+  // Calendar event mutation
+  const addEventMutation = useMutation({
+    mutationFn: (event: Omit<CalendarEvent, 'id' | 'userID'>) => 
+      calendarService.addEvent(event),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
+      toast.success("Reminder added to calendar");
+      
+      // Close the dialog
+      onOpenChange(false);
+      
+      // Reset form
+      form.reset();
+    },
+    onError: (error) => {
+      console.error("Error adding reminder to calendar:", error);
+      toast.error("Failed to add reminder to calendar");
     },
   });
 
@@ -84,24 +107,17 @@ const AddReminderDialog: React.FC<AddReminderDialogProps> = ({
       const [hours, minutes] = data.reminderTime.split(':').map(Number);
       reminderDate.setHours(hours, minutes);
 
-      // In a real app, we would save this to a database
-      // For now, we'll just show a toast and log to console
-      console.log("Reminder set:", {
-        ...data,
-        courseId: course.id,
-        courseName: course.name,
-        reminderDateTime: reminderDate
-      });
+      // Prepare the calendar event
+      const calendarEvent = {
+        title: data.title,
+        description: `${data.description || ''}\nCourse: ${course.name}`,
+        eventDate: reminderDate,
+        isRecurring: false
+      };
 
-      toast.success("Reminder set successfully", {
-        description: `${data.title} - ${format(reminderDate, "PPP 'at' h:mm a")}`,
-      });
-
-      // Close the dialog
-      onOpenChange(false);
+      // Submit the event to the calendar service
+      addEventMutation.mutate(calendarEvent);
       
-      // Reset form
-      form.reset();
     } catch (error) {
       console.error("Error setting reminder:", error);
       toast.error("Failed to set reminder");
@@ -222,10 +238,23 @@ const AddReminderDialog: React.FC<AddReminderDialogProps> = ({
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
+                disabled={addEventMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit">Save Reminder</Button>
+              <Button 
+                type="submit"
+                disabled={addEventMutation.isPending}
+              >
+                {addEventMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Reminder"
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

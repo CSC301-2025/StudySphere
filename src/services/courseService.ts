@@ -1,13 +1,37 @@
 import axiosClient from "@/lib/axiosClient";
 import { Course, Note, Assignment, Grade } from "@/context/CourseContext";
+import { toast } from "sonner";
 
 export const courseService = {
-  // Get all courses for the current user
+  // Get all courses for the current user with improved error handling
   getAllCourses: async (): Promise<Course[]> => {
     try {
-      const response = await axiosClient.get('/courses');
+      // Add cache-busting parameter to ensure fresh data after sign-in
+      const timestamp = new Date().getTime();
+      const userId = localStorage.getItem("userId") || "anonymous";
+      
+      const response = await axiosClient.get(`/courses`, {
+        params: {
+          _t: timestamp,
+          _uid: userId
+        }
+      });
+      
       // Ensure we return an empty array instead of null or undefined
-      return Array.isArray(response.data) ? response.data : [];
+      if (!response.data) {
+        console.warn('No course data received from API');
+        return [];
+      }
+      
+      // Validate and transform the response data
+      return Array.isArray(response.data) 
+        ? response.data.map(course => ({
+            ...course,
+            assignments: Array.isArray(course.assignments) ? course.assignments : [],
+            notes: Array.isArray(course.notes) ? course.notes : [],
+            grades: Array.isArray(course.grades) ? course.grades : []
+          }))
+        : [];
     } catch (error) {
       console.error('Error fetching courses:', error);
       // Return empty array on error instead of throwing

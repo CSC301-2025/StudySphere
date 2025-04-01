@@ -86,6 +86,26 @@ public class UserController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserDto>> updateUser(@PathVariable String id, @RequestBody UserDto userDto) {
+        try {
+            // Get the user from the security context to check authorization
+            UserEntity currentUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            
+            // Ensure the user is updating their own record
+            if (!currentUser.getId().equals(id)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "You can only update your own profile", null));
+            }
+            
+            // Update the user
+            UserEntity updatedUser = userService.updateUser(id, userDto);
+            return ResponseEntity.ok(new ApiResponse<>(true, "User updated successfully", userService.convertToDto(updatedUser)));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Error updating user: " + e.getMessage(), null));
+        }
+    }
 
     @PostMapping("/validateTokens")
     public ResponseEntity<ApiResponse<AuthResponseDto>> validateTokens(@RequestBody TokenDto dto) {
@@ -109,12 +129,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiResponse<>(false, "Invalid refresh token", null));
         }
-    }
-
-
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody RegisterDto registerDto) {
-        return null;
     }
 
 

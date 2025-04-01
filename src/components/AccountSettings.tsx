@@ -33,8 +33,9 @@ const accountFormSchema = z.object({
 type AccountFormValues = z.infer<typeof accountFormSchema>;
 
 const AccountSettings: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
@@ -63,15 +64,22 @@ const AccountSettings: React.FC = () => {
 
   const onSubmit = async (data: AccountFormValues) => {
     try {
-      // In a real app, this would call an API to update the user's information
-      toast.success("Account information updated successfully");
+      setIsSaving(true);
+      // Call the updateUser method from AuthContext
+      await updateUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        recoveryEmail: data.recoveryEmail || undefined,
+      });
+
       setIsEditing(false);
-      
-      // Since we don't have a real API call, we're just showing a success message
-      console.log("Updated account info:", data);
     } catch (error) {
-      toast.error("Failed to update account information");
       console.error("Error updating account:", error);
+      // Toast is already shown by the updateUser method in AuthContext
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -196,14 +204,15 @@ const AccountSettings: React.FC = () => {
                     setIsEditing(false);
                     form.reset();
                   }}
+                  disabled={isSaving}
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit"
-                  disabled={!form.formState.isValid || !form.formState.isDirty}
+                  disabled={!form.formState.isValid || !form.formState.isDirty || isSaving}
                 >
-                  Save Changes
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             ) : (

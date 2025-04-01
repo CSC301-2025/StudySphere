@@ -62,6 +62,43 @@ public class UserService {
     }
 
     /*
+     * Updates an existing user in the database.
+     */
+    public UserEntity updateUser(String id, UserDto userDto) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Update user information
+        if (userDto.getFirstName() != null) {
+            user.setFirstName(userDto.getFirstName());
+        }
+        
+        if (userDto.getLastName() != null) {
+            user.setLastName(userDto.getLastName());
+        }
+        
+        // Check if email is being changed and not already taken
+        if (userDto.getEmail() != null && !user.getEmail().equals(userDto.getEmail())) {
+            if (userRepository.existsByEmail(userDto.getEmail())) {
+                throw new IllegalArgumentException("Email already in use");
+            }
+            user.setEmail(userDto.getEmail());
+        }
+        
+        if (userDto.getPhoneNumber() != null) {
+            user.setPhoneNumber(userDto.getPhoneNumber());
+        }
+        
+        if (userDto.getRecoveryEmail() != null) {
+            user.setRecoveryEmail(userDto.getRecoveryEmail());
+        }
+        
+        // We don't update password or roles through this method for security reasons
+        
+        return userRepository.save(user);
+    }
+
+    /*
      * Saves a new user to the database.
      */
     public UserEntity saveUser(RegisterDto registerDto) {

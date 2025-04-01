@@ -46,7 +46,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-2">
           <GraduationCap size={20} className="text-primary" />
-          <span className="font-semibold text-lg">StudyHub</span>
+          <span className="font-semibold text-lg">StudySphere</span>
         </Link>
         <SidebarTrigger className="ml-auto lg:hidden" />
       </SidebarHeader>

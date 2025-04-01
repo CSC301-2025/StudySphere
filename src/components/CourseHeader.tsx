@@ -93,9 +93,6 @@ const CourseHeader = ({ course }: CourseHeaderProps) => {
           >
             Add Reminder
           </button>
-          <button className="btn-outline">
-            Course Resources
-          </button>
         </div>
       </div>
       

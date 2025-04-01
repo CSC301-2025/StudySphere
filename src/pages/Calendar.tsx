@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2, BookOpen, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2, BookOpen, Clock, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,11 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, isSameDay, isToday, parseISO } from 'date-fns';
+import { format, isSameDay, isToday, parseISO, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useCourses } from '@/context/CourseContext';
 import { toast } from "sonner";
 import { DayContent, DayContentProps } from 'react-day-picker';
+import { calendarService, CalendarEvent as CalendarEventType } from '@/services/calendarService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 type Event = {
   id: string;
@@ -28,7 +30,8 @@ type Event = {
 };
 
 const CalendarPage = () => {
-  const { courses, assignments } = useCourses();
+  const { courses } = useCourses();
+  const queryClient = useQueryClient();
   const [date, setDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
@@ -39,72 +42,185 @@ const CalendarPage = () => {
     type: 'reminder',
   });
   
+  // Fetch calendar events from backend
+  const { data: backendEvents = [], isLoading, error, isError } = useQuery({
+    queryKey: ['calendarEvents'],
+    queryFn: calendarService.getAllEvents,
+  });
+
+  const addEventMutation = useMutation({
+    mutationFn: (event: Omit<CalendarEventType, 'id' | 'userID'>) => 
+      calendarService.addEvent(event),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
+      toast.success("Event added successfully");
+      setIsAddEventOpen(false);
+      setNewEvent({ title: '', description: '', date: new Date(), type: 'reminder' });
+    },
+    onError: (error) => {
+      console.error("Error adding event:", error);
+      toast.error("Failed to add event");
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: string) => calendarService.deleteEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
+      toast.success("Event deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting event:", error);
+      toast.error("Failed to delete event");
+    },
+  });
+  
   // Generate events from course assignments and lectures (notes)
   const generateEvents = (): Event[] => {
     const events: Event[] = [];
     
     // Add assignments
     courses.forEach(course => {
+      if (!course || !Array.isArray(course.assignments)) return;
+      
       course.assignments.forEach(assignment => {
-        events.push({
-          id: `assignment-${assignment.id}`,
-          title: assignment.title,
-          description: assignment.description,
-          date: new Date(assignment.dueDate),
-          type: 'assignment',
-          courseId: course.id,
-          courseName: course.name,
-          color: course.color
-        });
+        if (!assignment.dueDate) return;
+        
+        try {
+          // Parse the date and validate it
+          let assignmentDate: Date;
+          
+          if (typeof assignment.dueDate === 'string') {
+            assignmentDate = new Date(assignment.dueDate);
+            // Check if the date is valid
+            if (!isValid(assignmentDate)) {
+              console.warn(`Invalid assignment date: ${assignment.dueDate}`);
+              return;
+            }
+          } else {
+            assignmentDate = assignment.dueDate;
+          }
+          
+          events.push({
+            id: `assignment-${assignment.id}`,
+            title: assignment.title,
+            description: assignment.description,
+            date: assignmentDate,
+            type: 'assignment',
+            courseId: course.id,
+            courseName: course.name,
+            color: course.color
+          });
+        } catch (error) {
+          console.error(`Error processing assignment date: ${assignment.dueDate}`, error);
+        }
       });
       
       // Add lectures (notes)
+      if (!course || !Array.isArray(course.notes)) return;
+      
       course.notes.forEach(note => {
-        events.push({
-          id: `lecture-${note.id}`,
-          title: note.title,
-          description: note.content,
-          date: new Date(note.dateAdded),
-          type: 'lecture',
-          courseId: course.id,
-          courseName: course.name,
-          color: course.color
-        });
+        if (!note.dateAdded) return;
+        
+        try {
+          // Parse the date and validate it
+          let noteDate: Date;
+          
+          if (typeof note.dateAdded === 'string') {
+            noteDate = new Date(note.dateAdded);
+            // Check if the date is valid
+            if (!isValid(noteDate)) {
+              console.warn(`Invalid note date: ${note.dateAdded}`);
+              return;
+            }
+          } else {
+            noteDate = note.dateAdded;
+          }
+          
+          events.push({
+            id: `lecture-${note.id}`,
+            title: note.title,
+            description: note.content,
+            date: noteDate,
+            type: 'lecture',
+            courseId: course.id,
+            courseName: course.name,
+            color: course.color
+          });
+        } catch (error) {
+          console.error(`Error processing note date: ${note.dateAdded}`, error);
+        }
       });
     });
     
     return events;
   };
   
-  // Sample reminder events (in a real app, these would be user-created)
-  const [manualEvents, setManualEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Study Session',
-      description: 'Review materials for upcoming midterm',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 15),
-      type: 'reminder',
-    },
-    {
-      id: '2',
-      title: 'Office Hours',
-      description: 'Professor Wilson office hours',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 20),
-      type: 'other',
-    },
-  ]);
+  // Convert backend events to UI events
+  const convertBackendEvents = (): Event[] => {
+    if (!Array.isArray(backendEvents)) return [];
+    
+    return backendEvents.map(event => {
+      if (!event) return null;
+      
+      try {
+        // Parse the date and validate it
+        let eventDate: Date;
+        
+        if (typeof event.eventDate === 'string') {
+          eventDate = new Date(event.eventDate);
+          // Check if the date is valid
+          if (!isValid(eventDate)) {
+            console.warn(`Invalid backend event date: ${event.eventDate}`);
+            return null;
+          }
+        } else if (event.eventDate instanceof Date) {
+          eventDate = event.eventDate;
+          if (!isValid(eventDate)) {
+            console.warn('Invalid backend event Date object');
+            return null;
+          }
+        } else {
+          console.warn('Backend event has no valid date');
+          return null;
+        }
+        
+        return {
+          id: event.id || '',
+          title: event.title || '',
+          description: event.description || '',
+          date: eventDate,
+          type: 'reminder', // Default type for backend events
+          ...(event.originalEventId ? { originalEventId: event.originalEventId } : {})
+        };
+      } catch (error) {
+        console.error(`Error processing backend event:`, error, event);
+        return null;
+      }
+    }).filter(Boolean) as Event[]; // Filter out null events
+  };
   
   // Combine all events
-  const events = [...generateEvents(), ...manualEvents];
+  const courseEvents = generateEvents();
+  const manualEvents = convertBackendEvents();
+  const events = [...courseEvents, ...manualEvents];
 
   // Create a mapping of events by date for easy lookup
   const eventsByDate: Record<string, Event[]> = {};
   events.forEach(event => {
-    const dateKey = format(event.date, 'yyyy-MM-dd');
-    if (!eventsByDate[dateKey]) {
-      eventsByDate[dateKey] = [];
+    try {
+      if (!event || !event.date || !isValid(event.date)) {
+        return; // Skip invalid events
+      }
+      
+      const dateKey = format(event.date, 'yyyy-MM-dd');
+      if (!eventsByDate[dateKey]) {
+        eventsByDate[dateKey] = [];
+      }
+      eventsByDate[dateKey].push(event);
+    } catch (error) {
+      console.error('Error formatting event date:', error, event);
     }
-    eventsByDate[dateKey].push(event);
   });
 
   // Custom day renderer component
@@ -166,16 +282,14 @@ const CalendarPage = () => {
       return;
     }
     
-    const event: Event = {
-      ...newEvent,
-      id: crypto.randomUUID(),
-      date: selectedDate,
+    const calendarEvent: Omit<CalendarEventType, 'id' | 'userID'> = {
+      title: newEvent.title,
+      description: newEvent.description,
+      eventDate: selectedDate,
+      isRecurring: false
     };
     
-    setManualEvents([...manualEvents, event]);
-    setNewEvent({ title: '', description: '', date: new Date(), type: 'reminder' });
-    setIsAddEventOpen(false);
-    toast.success("Event added successfully");
+    addEventMutation.mutate(calendarEvent);
   };
 
   const handleDeleteEvent = (eventId: string) => {
@@ -186,9 +300,13 @@ const CalendarPage = () => {
       return;
     }
     
-    setManualEvents(manualEvents.filter(event => event.id !== eventId));
-    toast.success("Event deleted successfully");
+    deleteEventMutation.mutate(eventId);
   };
+
+  if (isError) {
+    toast.error("Failed to load calendar events");
+    console.error("Calendar error:", error);
+  }
 
   return (
     <div className="page-container">
@@ -215,37 +333,45 @@ const CalendarPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <Calendar
-                mode="single"
-                month={date}
-                onMonthChange={setDate}
-                selected={selectedDate}
-                onSelect={(day) => day && setSelectedDate(day)}
-                className="rounded-md border mx-auto"
-                components={{
-                  DayContent: CustomDayContent
-                }}
-                showOutsideDays={true}
-                fixedWeeks={true}
-              />
-              <div className="mt-4 flex flex-wrap gap-2">
-                <div className="flex items-center">
-                  <div className="mr-1 h-3 w-3 rounded-full bg-red-500" />
-                  <span className="text-xs">Assignment</span>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-                <div className="flex items-center">
-                  <div className="mr-1 h-3 w-3 rounded-full bg-green-500" />
-                  <span className="text-xs">Lecture</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-1 h-3 w-3 rounded-full bg-blue-500" />
-                  <span className="text-xs">Reminder</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-1 h-3 w-3 rounded-full bg-yellow-500" />
-                  <span className="text-xs">Other</span>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <Calendar
+                    mode="single"
+                    month={date}
+                    onMonthChange={setDate}
+                    selected={selectedDate}
+                    onSelect={(day) => day && setSelectedDate(day)}
+                    className="rounded-md border mx-auto"
+                    components={{
+                      DayContent: CustomDayContent
+                    }}
+                    showOutsideDays={true}
+                    fixedWeeks={true}
+                  />
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="flex items-center">
+                      <div className="mr-1 h-3 w-3 rounded-full bg-red-500" />
+                      <span className="text-xs">Assignment</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="mr-1 h-3 w-3 rounded-full bg-green-500" />
+                      <span className="text-xs">Lecture</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="mr-1 h-3 w-3 rounded-full bg-blue-500" />
+                      <span className="text-xs">Reminder</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="mr-1 h-3 w-3 rounded-full bg-yellow-500" />
+                      <span className="text-xs">Other</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -312,14 +438,28 @@ const CalendarPage = () => {
                   </div>
                   
                   <DialogFooter>
-                    <Button type="submit" onClick={handleAddEvent}>Save Event</Button>
+                    <Button 
+                      type="submit" 
+                      onClick={handleAddEvent}
+                      disabled={addEventMutation.isPending}
+                    >
+                      {addEventMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Save Event
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             
             <CardContent>
-              {selectedDateEvents.length === 0 ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="mb-2 h-10 w-10 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading events...</p>
+                </div>
+              ) : selectedDateEvents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <CalendarIcon className="mb-2 h-10 w-10 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">No events for this day</p>
@@ -368,8 +508,13 @@ const CalendarPage = () => {
                             size="icon" 
                             className="text-muted-foreground hover:text-destructive"
                             onClick={() => handleDeleteEvent(event.id)}
+                            disabled={deleteEventMutation.isPending}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteEventMutation.isPending && deleteEventMutation.variables === event.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </div>

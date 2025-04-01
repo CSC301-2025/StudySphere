@@ -1,8 +1,8 @@
-
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { courseService } from "../services/courseService";
 import { toast } from "sonner";
+import { useAuth } from "./AuthContext";
 
 // Define course types
 export type Assignment = {
@@ -82,8 +82,15 @@ const CourseContext = createContext<CourseContextType | undefined>(undefined);
 // Context provider component
 export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
 
-  // Fetch courses from the API with enhanced error handling
+  // Reset course data when auth state changes
+  useEffect(() => {
+    // If auth state changes, invalidate course queries
+    queryClient.invalidateQueries({ queryKey: ['courses'] });
+  }, [isAuthenticated, user, queryClient]);
+
+  // Fetch courses from the API with enhanced error handling and stale-time configuration
   const { 
     data: courses = [], 
     isLoading, 
@@ -92,7 +99,16 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     queryKey: ['courses'],
     queryFn: courseService.getAllCourses,
     // Add default value if data is null/undefined
-    select: (data) => Array.isArray(data) ? data : []
+    select: (data) => Array.isArray(data) ? data : [],
+    // Set a shorter staleTime so courses refresh more often
+    staleTime: 0, // Always fetch fresh data
+    // Ensure the component refetches when it regains focus (e.g., after login)
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    // Retry failed requests
+    retry: 2,
+    // Only fetch when authenticated
+    enabled: isAuthenticated
   });
 
   // Create mutations for CRUD operations with optimistic updates

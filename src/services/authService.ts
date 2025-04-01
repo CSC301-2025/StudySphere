@@ -72,6 +72,11 @@ export const authService = {
         localStorage.setItem("accessToken", response.data.accessToken);
         localStorage.setItem("refreshToken", response.data.refreshToken);
         
+        // Store user ID for request identification
+        if (response.data.userDto && response.data.userDto.id) {
+          localStorage.setItem("userId", response.data.userDto.id.toString());
+        }
+        
         return response.data;
       } else {
         throw new Error(response.message || "Login failed");
@@ -101,6 +106,7 @@ export const authService = {
   logout: (): void => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userId");
   },
 
   // Refresh token
@@ -149,6 +155,23 @@ export const authService = {
       }
     } catch (error) {
       console.error("Get current user error:", error);
+      throw error;
+    }
+  },
+
+  // Update user profile
+  updateUser: async (userId: string, userData: Partial<User>): Promise<User> => {
+    try {
+      // Call the backend update user endpoint
+      const response = await fetchApi<{success: boolean; message: string; data: User}>(`/${userId}`, "PUT", userData);
+      
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || "Failed to update user profile");
+      }
+    } catch (error) {
+      console.error("Update user error:", error);
       throw error;
     }
   },
