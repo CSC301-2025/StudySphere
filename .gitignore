@@ -1,50 +1,24 @@
-# Ignore build and dependency directories
-bin/
-out/
-
-# Ignore IDE-specific files
-.vscode/
-*.code-workspace
-
-# Ignore compiled Java files
-*.class
-
-# Ignore package files
-#*.jar # Might start ignoring jar files in the future, leaving it commented for now.
-*.war
-*.ear
-
-# Ignore log files
+# Logs
+logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Ignore OS-specific files
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-
-# Ignore Gradle files
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-
-# Ignore Maven target directory
-target/
-
-# Ignore temporary files
-*.tmp
-*.swp
-*.swo
-
-# Ignore IntelliJ IDEA files
-.idea/
-*.iml
-
-# Ignore Eclipse project files
-.project
-.classpath
-.settings/
-
-# Ignore environment files
-.env
-
-# Ignore compiled files
-compiled/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
