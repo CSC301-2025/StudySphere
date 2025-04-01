@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,7 +41,7 @@ public class UserService {
         return userRepository.findById(id).orElse(null);
     }
 
-    /* 
+    /*
         Converts a UserEntity to a UserDto that is returned to the client as a response.
     */
     public UserDto convertToDto(UserEntity user) {
@@ -54,6 +55,12 @@ public class UserService {
         return dto;
     }
 
+    private boolean isPasswordStrong(String password) {
+
+        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{6,}$";
+        return password != null && Pattern.matches(pattern, password);
+    }
+
     /*
      * Saves a new user to the database.
      */
@@ -61,6 +68,11 @@ public class UserService {
         // Check if user already exists
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             throw new IllegalArgumentException("A user with this email already exists.");
+        }
+        
+        // Validate password quality before proceeding
+        if (!isPasswordStrong(registerDto.getPassword())) {
+            throw new IllegalArgumentException("Password must be at least 6 characters long and include one uppercase letter, one lowercase letter, and one number.");
         }
         
         // Create a new user entity
@@ -137,9 +149,7 @@ public class UserService {
         return new AuthResponseDto(newAccessToken, refreshToken, userDto);
     }
     
-
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
-
 }
