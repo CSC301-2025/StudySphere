@@ -37,9 +37,8 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 // Constants for login attempt tracking
-const MAX_LOGIN_ATTEMPTS = 10;
 const CAPTCHA_THRESHOLD = 5;
-const BLOCK_THRESHOLD = 10; // New constant for when to start blocking
+const BLOCK_THRESHOLD = 20; // New constant for when to start blocking
 const BLOCK_DURATION_BASE_MINUTES = 1;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
