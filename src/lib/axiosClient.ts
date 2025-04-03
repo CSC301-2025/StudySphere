@@ -1,10 +1,11 @@
-
 import axios from "axios";
 import { toast } from "sonner";
 
-// Create axios instance with a request ID
+// Use the environment variable for the API base URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL + "/api";
+
 const axiosClient = axios.create({
-  baseURL: "/api", // Use relative path that will be proxied
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 

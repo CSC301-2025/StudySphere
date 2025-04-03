@@ -1,9 +1,8 @@
 import { LoginCredentials, RegisterData, AuthResponse, TokenData, User } from "@/types/auth";
 
-// Base API URL - using the Spring Boot backend URL
-const API_BASE_URL = "/api/auth";
+// Use environment variable for the base URL, and append '/auth' if that’s your auth endpoint
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL + "/api/auth";
 
-// Helper function for making API requests
 async function fetchApi<T>(
   endpoint: string,
   method: string = "GET",
@@ -13,7 +12,6 @@ async function fetchApi<T>(
     "Content-Type": "application/json",
   };
 
-  // Add authorization header if user is logged in
   const token = localStorage.getItem("accessToken");
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -32,12 +30,10 @@ async function fetchApi<T>(
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
 
-    // For non-JSON responses (like 204 No Content)
     if (response.status === 204) {
       return {} as T;
     }
 
-    // Try to parse JSON response
     let responseData;
     try {
       responseData = await response.json();
@@ -48,7 +44,6 @@ async function fetchApi<T>(
       return {} as T;
     }
 
-    // Check if the response is successful
     if (!response.ok) {
       throw new Error(responseData.message || `HTTP error! Status: ${response.status}`);
     }
