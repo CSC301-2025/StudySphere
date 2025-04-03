@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: isProd
-            ? 'https://StudySphereV1-env.eba-vtn6acad.us-east-2.elasticbeanstalk.com'
+            ? 'http://studyspherev1-env.eba-hzwtud5h.us-east-2.elasticbeanstalk.com/'
             : 'https://localhost:8443',
           changeOrigin: true,
           secure: isProd ? true : false,
